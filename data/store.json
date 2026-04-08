@@ -1,0 +1,51 @@
+{
+  "titulo": "Tienda de Arte",
+  "subtitulo": "Seleccioná una obra y mirá el detalle sin salir de la página. Todo el catálogo también en la página «Catálogo completo».",
+  "sections": [
+    { "id": "obras", "name": "Obras", "order": 0 },
+    { "id": "artesanias", "name": "Artesanías", "order": 1 },
+    { "id": "remeras", "name": "Remeras", "order": 2 }
+  ],
+  "products": [
+    {
+      "id": "seed-1",
+      "sectionId": "obras",
+      "title": "Composición Roja I",
+      "subtitle": "Obra original / reproducción",
+      "price": "$12.500 ARS",
+      "image": "img/foto1.jpeg",
+      "desc": "Obra seleccionada. Consultá disponibilidad y opciones de entrega.",
+      "btnLabel": "VER DETALLE"
+    },
+    {
+      "id": "seed-2",
+      "sectionId": "obras",
+      "title": "Abstracción en Negro",
+      "subtitle": "Obra original / reproducción",
+      "price": "$18.200 ARS",
+      "image": "img/foto2.jpeg",
+      "desc": "Pieza con carácter y profundidad. Ideal para espacios amplios y minimalistas.",
+      "btnLabel": "VER DETALLE"
+    },
+    {
+      "id": "seed-3",
+      "sectionId": "artesanias",
+      "title": "Texturas Urbanas",
+      "subtitle": "Pieza artesanal",
+      "price": "$15.000 ARS",
+      "image": "img/foto3.jpeg",
+      "desc": "Texturas y líneas para una presencia moderna. Consultá por tamaños.",
+      "btnLabel": "VER DETALLE"
+    },
+    {
+      "id": "seed-4",
+      "sectionId": "remeras",
+      "title": "Serie Romero #04",
+      "subtitle": "Remera / merchandising",
+      "price": "$21.000 ARS",
+      "image": "img/foto4.jpeg",
+      "desc": "Serie seleccionada. Ideal para coleccionistas y espacios de alto contraste.",
+      "btnLabel": "VER DETALLE"
+    }
+  ]
+}

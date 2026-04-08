@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Espacio Romero - Reseñas</title>
+  <meta name="description" content="Reseñas de visitantes y formulario para publicar nuevas opiniones.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script>tailwind.config={theme:{extend:{colors:{'brand-red':'#cc0000','brand-black':'#0a0a0a','brand-dark-red':'#990000'}}}};</script>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body class="bg-brand-black text-white">
+  <nav class="fixed w-full z-50 bg-black/90 border-b border-brand-red/30">
+    <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+      <a href="./index.html" class="text-2xl font-serif font-bold tracking-widest text-brand-red">ESPACIO <span class="text-white">ROMERO</span></a>
+      <div class="hidden md:flex space-x-6 text-xs uppercase tracking-widest font-semibold text-gray-200">
+        <a href="./index.html">Inicio</a><a href="./alojamiento.html">Alojamiento</a><a href="./artista.html">El Artista</a><div class="relative group inline-block"><a href="./tienda.html">Tienda</a><div class="absolute left-0 top-full pt-3 hidden group-hover:block"><div class="bg-black border border-brand-red/40 rounded-sm shadow-lg min-w-[200px] overflow-hidden"><a href="./tienda.html#tienda-obras" class="block px-4 py-3 text-xs uppercase tracking-widest text-gray-200 hover:bg-white hover:text-black">Obras</a><a href="./tienda.html#tienda-artesanias" class="block px-4 py-3 text-xs uppercase tracking-widest text-gray-200 hover:bg-white hover:text-black">Artesanías</a><a href="./tienda.html#tienda-remeras" class="block px-4 py-3 text-xs uppercase tracking-widest text-gray-200 hover:bg-white hover:text-black">Remeras</a><a href="./catalogo.html" class="block px-4 py-3 text-xs uppercase tracking-widest text-gray-200 hover:bg-white hover:text-black border-t border-zinc-800">Catálogo completo</a></div></div></div><a href="./resenas.html" class="text-brand-red">Reseñas</a><a href="./contacto.html">Contacto</a>
+      </div>
+      <button class="md:hidden text-white text-2xl" id="menu-btn" aria-label="Abrir menú"><i class="fas fa-bars"></i></button>
+    </div>
+    <div id="mobile-menu" class="hidden md:hidden border-t border-brand-red/30 bg-black/95">
+      <div class="container mx-auto px-6 py-6 flex flex-col gap-4 text-sm uppercase tracking-widest font-semibold text-gray-200">
+        <a href="./index.html">Inicio</a><a href="./alojamiento.html">Alojamiento</a><a href="./artista.html">El Artista</a>
+        <div class="space-y-2">
+          <a href="./tienda.html">Tienda</a>
+          <div class="pl-4 flex flex-col gap-2 text-xs font-semibold uppercase tracking-widest text-gray-400">
+            <a href="./tienda.html#tienda-obras" class="hover:text-white transition">Obras</a>
+            <a href="./tienda.html#tienda-artesanias" class="hover:text-white transition">Artesanías</a>
+            <a href="./tienda.html#tienda-remeras" class="hover:text-white transition">Remeras</a>
+            <a href="./catalogo.html" class="hover:text-white transition">Catálogo completo</a>
+          </div>
+        </div>
+        <a href="./resenas.html" class="text-brand-red">Reseñas</a><a href="./contacto.html">Contacto</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="pt-28 pb-20 px-6 bg-zinc-900 min-h-screen">
+    <div class="container mx-auto">
+      <h1 class="text-4xl font-serif font-bold mb-4 section-title text-center">Reseñas</h1>
+      <p class="text-gray-400 mb-8 text-center max-w-2xl mx-auto">Lo que nuestros visitantes dicen sobre su experiencia en Espacio Romero.</p>
+
+      <div class="max-w-3xl mx-auto mb-12 p-6 border border-zinc-800 bg-black/80 reveal">
+        <p class="text-sm text-gray-400 text-center mb-4">
+          Las opiniones con más detalle y verificación están en las fichas oficiales del alojamiento.
+        </p>
+        <div class="flex flex-col sm:flex-row gap-3 justify-center">
+          <a href="https://www.airbnb.com.ar/rooms/1640510292843045372" target="_blank" rel="noreferrer" class="btn btn-ghost text-center">
+            <i class="fab fa-airbnb"></i> Reseñas en Airbnb
+          </a>
+          <a href="https://www.booking.com/hotel/ar/espaciosa-casa-en-pleno-centro-porteno.es-ar.html" target="_blank" rel="noreferrer" class="btn btn-ghost text-center">
+            <i class="fas fa-bed"></i> Reseñas en Booking.com
+          </a>
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-8 mb-16" id="reviews-container">
+        <div class="bg-brand-black p-8 border-t-2 border-brand-red reveal">
+          <div class="flex text-brand-red mb-4"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+          <p class="italic mb-6 text-gray-300">"Una experiencia inolvidable. Dormir rodeado de arte es algo que todos deberían experimentar al menos una vez."</p>
+          <div class="flex items-center gap-4"><div class="w-10 h-10 bg-zinc-800 rounded-full flex items-center justify-center font-bold">M</div><div><h4 class="font-bold">María G.</h4><p class="text-xs text-gray-500">Buenos Aires, AR</p></div></div>
+        </div>
+        <div class="bg-brand-black p-8 border-t-2 border-brand-red reveal">
+          <div class="flex text-brand-red mb-4"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+          <p class="italic mb-6 text-gray-300">"El alojamiento es impecable y la atención al detalle es asombrosa. ¡Volveré pronto!"</p>
+          <div class="flex items-center gap-4"><div class="w-10 h-10 bg-zinc-800 rounded-full flex items-center justify-center font-bold">R</div><div><h4 class="font-bold">Ricardo S.</h4><p class="text-xs text-gray-500">Madrid, ES</p></div></div>
+        </div>
+        <div class="bg-brand-black p-8 border-t-2 border-brand-red reveal">
+          <div class="flex text-brand-red mb-4"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="far fa-star"></i></div>
+          <p class="italic mb-6 text-gray-300">"Increíble atmósfera creativa. Ideal para desconectar y encontrar inspiración."</p>
+          <div class="flex items-center gap-4"><div class="w-10 h-10 bg-zinc-800 rounded-full flex items-center justify-center font-bold">L</div><div><h4 class="font-bold">Lucía P.</h4><p class="text-xs text-gray-500">Santiago, CL</p></div></div>
+        </div>
+      </div>
+
+      <div class="max-w-2xl mx-auto bg-brand-black p-8 rounded-sm reveal">
+        <h2 class="text-2xl font-serif font-bold mb-6 text-center">Dejanos tu reseña</h2>
+        <form id="review-form" class="space-y-4">
+          <div class="grid md:grid-cols-2 gap-4">
+            <input type="text" id="rev-name" placeholder="Tu nombre" required class="w-full bg-zinc-900 border border-zinc-800 p-3 text-white focus:outline-none focus:border-brand-red">
+            <div class="flex items-center justify-between gap-3 bg-zinc-900 border border-zinc-800 p-3">
+              <span class="text-sm text-gray-400 mr-2">Calificación:</span>
+              <div class="flex text-xl text-gray-600 cursor-pointer" id="star-rating">
+                <i class="fas fa-star" data-value="1"></i><i class="fas fa-star" data-value="2"></i><i class="fas fa-star" data-value="3"></i><i class="fas fa-star" data-value="4"></i><i class="fas fa-star" data-value="5"></i>
+              </div>
+              <span id="rating-label" class="text-xs text-gray-500">5/5</span>
+              <input type="hidden" id="rev-rating" value="5">
+            </div>
+          </div>
+          <textarea id="rev-comment" placeholder="Cuéntanos tu experiencia..." required class="w-full bg-zinc-900 border border-zinc-800 p-3 text-white h-32 focus:outline-none focus:border-brand-red"></textarea>
+          <div id="review-error" class="hidden text-sm text-red-400"></div>
+          <button id="review-submit" type="submit" class="w-full bg-brand-red py-3 font-bold hover:bg-brand-dark-red transition">PUBLICAR RESEÑA</button>
+        </form>
+        <div id="review-success" class="hidden text-center text-green-500 mt-4">¡Gracias por tu reseña!</div>
+      </div>
+    </div>
+  </main>
+
+  <script src="./app.js" defer></script>
+</body>
+</html>

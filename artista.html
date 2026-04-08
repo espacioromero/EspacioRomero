@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Espacio Romero - El Artista</title>
+  <meta name="description" content="Historia y visión artística detrás de Espacio Romero.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script>tailwind.config={theme:{extend:{colors:{'brand-red':'#cc0000','brand-black':'#0a0a0a'}}}};</script>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body class="bg-brand-black text-white">
+  <nav class="fixed w-full z-50 bg-black/90 border-b border-brand-red/30">
+    <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+      <a href="./index.html" class="text-2xl font-serif font-bold tracking-widest text-brand-red">ESPACIO <span class="text-white">ROMERO</span></a>
+      <div class="hidden md:flex space-x-6 text-xs uppercase tracking-widest font-semibold text-gray-200">
+        <a href="./index.html">Inicio</a><a href="./alojamiento.html">Alojamiento</a><a href="./artista.html" class="text-brand-red">El Artista</a><div class="relative group inline-block"><a href="./tienda.html">Tienda</a><div class="absolute left-0 top-full pt-3 hidden group-hover:block"><div class="bg-black border border-brand-red/40 rounded-sm shadow-lg min-w-[200px] overflow-hidden"><a href="./tienda.html#tienda-obras" class="block px-4 py-3 text-xs uppercase tracking-widest text-gray-200 hover:bg-white hover:text-black">Obras</a><a href="./tienda.html#tienda-artesanias" class="block px-4 py-3 text-xs uppercase tracking-widest text-gray-200 hover:bg-white hover:text-black">Artesanías</a><a href="./tienda.html#tienda-remeras" class="block px-4 py-3 text-xs uppercase tracking-widest text-gray-200 hover:bg-white hover:text-black">Remeras</a><a href="./catalogo.html" class="block px-4 py-3 text-xs uppercase tracking-widest text-gray-200 hover:bg-white hover:text-black border-t border-zinc-800">Catálogo completo</a></div></div></div><a href="./resenas.html">Reseñas</a><a href="./contacto.html">Contacto</a>
+      </div>
+      <button class="md:hidden text-white text-2xl" id="menu-btn" aria-label="Abrir menú"><i class="fas fa-bars"></i></button>
+    </div>
+    <div id="mobile-menu" class="hidden md:hidden border-t border-brand-red/30 bg-black/95">
+      <div class="container mx-auto px-6 py-6 flex flex-col gap-4 text-sm uppercase tracking-widest font-semibold text-gray-200">
+        <a href="./index.html">Inicio</a><a href="./alojamiento.html">Alojamiento</a><a href="./artista.html" class="text-brand-red">El Artista</a>
+        <div class="space-y-2">
+          <a href="./tienda.html">Tienda</a>
+          <div class="pl-4 flex flex-col gap-2 text-xs font-semibold uppercase tracking-widest text-gray-400">
+            <a href="./tienda.html#tienda-obras" class="hover:text-white transition">Obras</a>
+            <a href="./tienda.html#tienda-artesanias" class="hover:text-white transition">Artesanías</a>
+            <a href="./tienda.html#tienda-remeras" class="hover:text-white transition">Remeras</a>
+            <a href="./catalogo.html" class="hover:text-white transition">Catálogo completo</a>
+          </div>
+        </div>
+        <a href="./resenas.html">Reseñas</a><a href="./contacto.html">Contacto</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="pt-32 pb-24 px-6 relative overflow-hidden">
+    <div class="absolute top-0 right-0 w-64 h-64 bg-brand-red/5 rounded-full blur-3xl -z-10 animate-pulse"></div>
+    <div class="absolute bottom-0 left-0 w-96 h-96 bg-brand-red/5 rounded-full blur-3xl -z-10 animate-pulse" style="animation-delay: 2s"></div>
+    
+    <div class="container mx-auto">
+      <div class="grid lg:grid-cols-12 gap-16 items-center">
+        <div class="lg:col-span-6 reveal group">
+          <div class="relative">
+            <div class="absolute -inset-4 border border-brand-red/20 scale-95 group-hover:scale-100 transition-transform duration-700"></div>
+            <img src="img/foto2.jpeg" data-fallback="img/foto3.jpeg" data-edit-image="artista_img_1" data-edit-label="Foto principal" alt="Espacio Romero" class="relative z-10 rounded-sm shadow-2xl w-full h-[550px] object-cover grayscale-[0.3] group-hover:grayscale-0 transition-all duration-700">
+            <div class="absolute -bottom-6 -right-6 w-32 h-32 bg-brand-red -z-10 hidden md:block"></div>
+          </div>
+        </div>
+        <div class="lg:col-span-6 reveal">
+          <span data-edit-key="artista_subtitle" data-edit-label="Subtítulo pequeño" class="text-brand-red uppercase tracking-[0.3em] font-bold text-xs mb-4 block">El alma detrás del proyecto</span>
+          <h1 data-edit-key="artista_titulo" data-edit-label="Título principal" class="text-5xl md:text-7xl font-serif font-bold mb-8 leading-tight">Juan Carlos Romero</h1>
+          <div class="space-y-6 text-lg text-gray-300 leading-relaxed">
+            <p data-edit-key="artista_parrafo_1" data-edit-label="Primer párrafo">
+              Artista plástico y visionario, Juan Carlos Romero ha transformado su pasión en un refugio donde el arte y la hospitalidad convergen. Cada espacio de esta casa ha sido curado personalmente para ofrecer una experiencia que trasciende el simple alojamiento.
+            </p>
+            <p data-edit-key="artista_parrafo_2" data-edit-label="Segundo párrafo">
+              Su obra, presente en cada rincón, busca establecer un diálogo con el huésped, invitándolo a sumergirse en un universo de texturas, colores y formas que celebran la identidad porteña y la expresión contemporánea.
+            </p>
+          </div>
+          <div class="mt-12 flex flex-wrap gap-6">
+            <a data-edit-key="artista_cta" data-edit-label="Botón principal" href="./tienda.html" class="btn btn-primary px-8 py-4">Explorar su obra <i class="fas fa-arrow-right ml-2"></i></a>
+            <div class="flex items-center gap-4 text-gray-400">
+              <div class="w-12 h-px bg-zinc-700"></div>
+              <span data-edit-key="artista_footer_note" data-edit-label="Nota al pie" class="text-sm italic">Obras disponibles para adquisición</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-32 reveal">
+        <h2 data-edit-key="artista_galeria_titulo" data-edit-label="Título Galería" class="text-4xl font-serif font-bold mb-10 text-center">Galería de Obras</h2>
+        <div id="artista-galeria-root" data-edit-gallery="artista_galeria" data-edit-label="Fotos de la galería del Artista" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <!-- Las fotos se cargarán dinámicamente -->
+        </div>
+      </div>
+
+      <div class="mt-32 grid md:grid-cols-3 gap-12 reveal">
+        <div class="text-center p-8 border border-zinc-800/50 hover:border-brand-red/30 transition-colors bg-zinc-900/20 backdrop-blur-sm rounded-xl">
+          <div class="text-3xl text-brand-red mb-6"><i class="fas fa-eye"></i></div>
+          <h3 data-edit-key="art_val_1_t" data-edit-label="Valor 1: Título" class="text-xl font-serif font-bold mb-4">Visión</h3>
+          <p data-edit-key="art_val_1_d" data-edit-label="Valor 1: Desc." class="text-gray-400 text-sm leading-relaxed">Integrar el arte en la vida cotidiana de nuestros huéspedes para crear memorias únicas.</p>
+        </div>
+        <div class="text-center p-8 border border-zinc-800/50 hover:border-brand-red/30 transition-colors bg-zinc-900/20 backdrop-blur-sm rounded-xl">
+          <div class="text-3xl text-brand-red mb-6"><i class="fas fa-hand-holding-heart"></i></div>
+          <h3 data-edit-key="art_val_2_t" data-edit-label="Valor 2: Título" class="text-xl font-serif font-bold mb-4">Pasión</h3>
+          <p data-edit-key="art_val_2_d" data-edit-label="Valor 2: Desc." class="text-gray-400 text-sm leading-relaxed">Cada pincelada y cada detalle del alojamiento están impregnados de dedicación absoluta.</p>
+        </div>
+        <div class="text-center p-8 border border-zinc-800/50 hover:border-brand-red/30 transition-colors bg-zinc-900/20 backdrop-blur-sm rounded-xl">
+          <div class="text-3xl text-brand-red mb-6"><i class="fas fa-landmark"></i></div>
+          <h3 data-edit-key="art_val_3_t" data-edit-label="Valor 3: Título" class="text-xl font-serif font-bold mb-4">Legado</h3>
+          <p data-edit-key="art_val_3_d" data-edit-label="Valor 3: Desc." class="text-gray-400 text-sm leading-relaxed">Espacio Romero es más que una casa; es un testimonio vivo del arte en movimiento.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="./app.js" defer></script>
+</body>
+</html>

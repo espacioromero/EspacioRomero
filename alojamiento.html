@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Espacio Romero - Alojamiento</title>
+  <meta name="description" content="Reservá tu alojamiento en Espacio Romero de forma directa, sin intermediarios.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = { theme: { extend: { colors: { 'brand-red': '#cc0000', 'brand-black': '#0a0a0a', 'brand-dark-red': '#990000' } } } };
+  </script>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body class="bg-brand-black text-white">
+  <nav class="fixed w-full z-50 bg-black/90 border-b border-brand-red/30">
+    <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+      <a href="./index.html" class="text-2xl font-serif font-bold tracking-widest text-brand-red">ESPACIO <span class="text-white">ROMERO</span></a>
+      <div class="hidden md:flex space-x-6 text-xs uppercase tracking-widest font-semibold text-gray-200">
+        <a href="./index.html" class="hover:text-brand-red transition">Inicio</a>
+        <a href="./alojamiento.html" class="text-brand-red">Alojamiento</a>
+        <a href="./artista.html" class="hover:text-brand-red transition">El Artista</a>
+        <div class="relative group">
+          <a href="./tienda.html" class="hover:text-brand-red transition">Tienda</a>
+          <div class="absolute left-0 top-full pt-3 hidden group-hover:block">
+            <div class="bg-black border border-brand-red/40 rounded-sm shadow-lg min-w-[200px] overflow-hidden">
+              <a href="./tienda.html#tienda-obras" class="block px-4 py-3 text-xs uppercase tracking-widest text-gray-200 hover:bg-white hover:text-black">Obras</a>
+              <a href="./tienda.html#tienda-artesanias" class="block px-4 py-3 text-xs uppercase tracking-widest text-gray-200 hover:bg-white hover:text-black">Artesanías</a>
+              <a href="./tienda.html#tienda-remeras" class="block px-4 py-3 text-xs uppercase tracking-widest text-gray-200 hover:bg-white hover:text-black">Remeras</a>
+              <a href="./catalogo.html" class="block px-4 py-3 text-xs uppercase tracking-widest text-gray-200 hover:bg-white hover:text-black border-t border-zinc-800">Catálogo completo</a>
+            </div>
+          </div>
+        </div>
+        <a href="./resenas.html" class="hover:text-brand-red transition">Reseñas</a>
+        <a href="./contacto.html" class="hover:text-brand-red transition">Contacto</a>
+      </div>
+      <button class="md:hidden text-white text-2xl" id="menu-btn" aria-label="Abrir menú"><i class="fas fa-bars"></i></button>
+    </div>
+    <div id="mobile-menu" class="hidden md:hidden border-t border-brand-red/30 bg-black/95">
+      <div class="container mx-auto px-6 py-6 flex flex-col gap-4 text-sm uppercase tracking-widest font-semibold text-gray-200">
+        <a href="./index.html">Inicio</a><a href="./alojamiento.html" class="text-brand-red">Alojamiento</a><a href="./artista.html">El Artista</a>
+        <div class="space-y-2">
+          <a href="./tienda.html">Tienda</a>
+          <div class="pl-4 flex flex-col gap-2 text-xs font-semibold uppercase tracking-widest text-gray-400">
+            <a href="./tienda.html#tienda-obras" class="hover:text-white transition">Obras</a>
+            <a href="./tienda.html#tienda-artesanias" class="hover:text-white transition">Artesanías</a>
+            <a href="./tienda.html#tienda-remeras" class="hover:text-white transition">Remeras</a>
+            <a href="./catalogo.html" class="hover:text-white transition">Catálogo completo</a>
+          </div>
+        </div>
+        <a href="./resenas.html">Reseñas</a><a href="./contacto.html">Contacto</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="pt-28 pb-20 px-6 bg-zinc-900 min-h-screen">
+    <div class="container mx-auto">
+      <h1 class="text-4xl font-serif font-bold mb-4 section-title text-center">Reservar alojamiento</h1>
+      <p class="text-gray-400 mb-4 text-center max-w-3xl mx-auto">Seleccioná fechas, verificá disponibilidad y confirmá la reserva en pocos pasos.</p>
+      <p class="text-center text-sm text-gray-500 mb-10 max-w-3xl mx-auto">
+        También podés ver opiniones en
+        <a href="https://www.airbnb.com.ar/rooms/1640510292843045372" target="_blank" rel="noreferrer" class="text-gray-300 hover:text-brand-red transition">Airbnb</a>
+        y
+        <a href="https://www.booking.com/hotel/ar/espaciosa-casa-en-pleno-centro-porteno.es-ar.html" target="_blank" rel="noreferrer" class="text-gray-300 hover:text-brand-red transition">Booking.com</a>.
+      </p>
+
+      <div class="grid lg:grid-cols-12 gap-8 mb-12 items-start">
+        <div class="lg:col-span-7">
+          <div class="bg-black/40 backdrop-blur-sm border border-zinc-800 p-8 rounded-2xl shadow-2xl reveal">
+            <h2 class="text-3xl font-serif font-bold mb-6">Sobre el lugar</h2>
+            <p class="text-gray-300 text-lg leading-relaxed mb-8">
+              Espacio cálido y artístico en Buenos Aires, pensado para descansar con comodidad y privacidad. Ideal para escapadas, trabajo remoto o estadías culturales.
+            </p>
+            <div class="grid sm:grid-cols-2 gap-4 text-sm">
+              <div class="flex items-center gap-3 text-gray-200 bg-white/5 p-3 rounded-lg"><i class="fas fa-bath text-brand-red w-5 text-center"></i> 2 baños + toilette</div>
+              <div class="flex items-center gap-3 text-gray-200 bg-white/5 p-3 rounded-lg"><i class="fas fa-bed text-brand-red w-5 text-center"></i> 3 dormitorios</div>
+              <div class="flex items-center gap-3 text-gray-200 bg-white/5 p-3 rounded-lg"><i class="fas fa-utensils text-brand-red w-5 text-center"></i> Cocina equipada</div>
+              <div class="flex items-center gap-3 text-gray-200 bg-white/5 p-3 rounded-lg"><i class="fas fa-tv text-brand-red w-5 text-center"></i> Sala con TV</div>
+              <div class="flex items-center gap-3 text-gray-200 bg-white/5 p-3 rounded-lg"><i class="fas fa-wifi text-brand-red w-5 text-center"></i> Wi‑Fi alta velocidad</div>
+              <div class="flex items-center gap-3 text-gray-200 bg-white/5 p-3 rounded-lg"><i class="fas fa-snowflake text-brand-red w-5 text-center"></i> Aire acondicionado</div>
+              <div class="flex items-center gap-3 text-gray-200 bg-white/5 p-3 rounded-lg"><i class="fas fa-shirt text-brand-red w-5 text-center"></i> Ropa blanca</div>
+              <div class="flex items-center gap-3 text-gray-200 bg-white/5 p-3 rounded-lg"><i class="fas fa-location-dot text-brand-red w-5 text-center"></i> Excelente ubicación</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="lg:col-span-5 space-y-6">
+          <div class="reveal bg-black border border-zinc-800 overflow-hidden rounded-2xl shadow-xl group">
+            <img src="img/foto6.jpeg" alt="Living artístico" class="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-500">
+          </div>
+          <div class="reveal bg-black border border-zinc-800 overflow-hidden rounded-2xl shadow-xl group">
+            <img src="img/foto10.jpeg" alt="Perspectiva del espacio" class="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-500">
+          </div>
+        </div>
+      </div>
+
+      <div class="mb-20">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-4 mb-10">
+          <h2 class="text-4xl font-serif font-bold reveal">Galería del Alojamiento</h2>
+          <p class="text-gray-500 uppercase tracking-widest text-xs reveal">15 fotos del alojamiento</p>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 reveal">
+          <div class="overflow-hidden rounded-2xl group aspect-square bg-black border border-zinc-800 shadow-lg">
+            <img src="img/foto1.jpeg" alt="Escalera" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+          </div>
+          <div class="overflow-hidden rounded-2xl group aspect-square bg-black border border-zinc-800 shadow-lg">
+            <img src="img/foto2.jpeg" alt="Baño" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+          </div>
+          <div class="overflow-hidden rounded-2xl group aspect-square bg-black border border-zinc-800 shadow-lg">
+            <img src="img/foto3.jpeg" alt="Habitación" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+          </div>
+          <div class="overflow-hidden rounded-2xl group aspect-square bg-black border border-zinc-800 shadow-lg">
+            <img src="img/foto4.jpeg" alt="Comedor" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+          </div>
+          <div class="overflow-hidden rounded-2xl group aspect-square bg-black border border-zinc-800 shadow-lg">
+            <img src="img/foto5.jpeg" alt="Dormitorio" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+          </div>
+          <div class="overflow-hidden rounded-2xl group aspect-square bg-black border border-zinc-800 shadow-lg">
+            <img src="img/foto6.jpeg" alt="Living con vitrales" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+          </div>
+          <div class="overflow-hidden rounded-2xl group aspect-square bg-black border border-zinc-800 shadow-lg">
+            <img src="img/foto7.jpeg" alt="Dormitorio Twin" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+          </div>
+          <div class="overflow-hidden rounded-2xl group aspect-square bg-black border border-zinc-800 shadow-lg">
+            <img src="img/foto8.jpeg" alt="Detalle baño" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+          </div>
+          <div class="overflow-hidden rounded-2xl group aspect-square bg-black border border-zinc-800 shadow-lg">
+            <img src="img/foto9.jpeg" alt="Vista baño" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+          </div>
+          <div class="overflow-hidden rounded-2xl group aspect-square bg-black border border-zinc-800 shadow-lg">
+            <img src="img/foto10.jpeg" alt="Vista desde arriba" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+          </div>
+          <div class="overflow-hidden rounded-2xl group aspect-square bg-black border border-zinc-800 shadow-lg">
+            <img src="img/foto11.jpeg" alt="Pasillo y living" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+          </div>
+          <div class="overflow-hidden rounded-2xl group aspect-square bg-black border border-zinc-800 shadow-lg">
+            <img src="img/foto12.jpeg" alt="Entrada vitrales" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+          </div>
+          <div class="overflow-hidden rounded-2xl group aspect-square bg-black border border-zinc-800 shadow-lg">
+            <img src="img/foto13.jpeg" alt="Cocina completa" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+          </div>
+          <div class="overflow-hidden rounded-2xl group aspect-square bg-black border border-zinc-800 shadow-lg">
+            <img src="img/foto14.jpeg" alt="Habitación Twin Azul" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+          </div>
+          <div class="overflow-hidden rounded-2xl group aspect-square bg-black border border-zinc-800 shadow-lg">
+            <img src="img/foto15.jpeg" alt="Detalle baño moderno" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+          </div>
+        </div>
+      </div>
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+          <h2 class="text-3xl font-serif font-bold">Calendario de disponibilidad</h2>
+          <div class="flex flex-wrap gap-x-4 gap-y-1 text-[10px] uppercase tracking-widest text-gray-400">
+            <span class="inline-flex items-center gap-1.5"><span class="cal-legend-dot cal-legend-free"></span> Libre</span>
+            <span class="inline-flex items-center gap-1.5"><span class="cal-legend-dot cal-legend-booked"></span> Ocupado</span>
+            <span class="inline-flex items-center gap-1.5"><span class="cal-legend-dot cal-legend-range bg-brand-red"></span> Tu selección</span>
+          </div>
+        </div>
+        <p id="calendar-hint" class="text-sm text-gray-400 mb-6 text-center italic">Tocá el día de <strong class="text-white">llegada</strong> y después el de <strong class="text-white">salida</strong>. Los días ocupados no se pueden elegir.</p>
+        <div class="flex items-center justify-between mb-6">
+          <button type="button" id="calendar-prev" aria-label="Mes anterior" class="calendar-nav-btn w-10 h-10 flex items-center justify-center border border-zinc-700 rounded-full hover:border-brand-red hover:text-brand-red transition-all">
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          <div id="calendar-month-label" class="font-bold text-xl uppercase tracking-widest text-white"></div>
+          <button type="button" id="calendar-next" aria-label="Mes siguiente" class="calendar-nav-btn w-10 h-10 flex items-center justify-center border border-zinc-700 rounded-full hover:border-brand-red hover:text-brand-red transition-all">
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+        <div class="grid grid-cols-7 text-center text-xs uppercase tracking-widest font-bold text-zinc-500 mb-4">
+          <div>Lun</div><div>Mar</div><div>Mié</div><div>Jue</div><div>Vie</div><div>Sáb</div><div>Dom</div>
+        </div>
+        <div id="availability-calendar-wrap" class="overflow-hidden rounded-lg">
+          <div id="availability-calendar" class="grid grid-cols-7 gap-2 p-1" role="grid" aria-label="Calendario de disponibilidad"></div>
+        </div>
+      </div>
+
+      <div class="max-w-3xl mx-auto bg-zinc-900/50 backdrop-blur-md p-8 md:p-10 rounded-2xl border border-zinc-800 shadow-2xl reveal">
+        <form id="booking-form" class="space-y-6">
+          <div class="grid md:grid-cols-2 gap-6">
+            <div class="flex flex-col">
+              <label for="bk-name" class="text-xs uppercase tracking-widest font-bold text-gray-400 mb-2">Nombre Completo</label>
+              <input id="bk-name" name="name" type="text" placeholder="Ej: Juan Pérez" autocomplete="name" required class="w-full bg-black/50 border border-zinc-700 p-4 text-white rounded-lg focus:outline-none focus:border-brand-red transition-colors">
+            </div>
+            <div class="flex flex-col">
+              <label for="bk-email" class="text-xs uppercase tracking-widest font-bold text-gray-400 mb-2">Correo Electrónico</label>
+              <input id="bk-email" name="email" type="email" placeholder="ejemplo@correo.com" autocomplete="email" required class="w-full bg-black/50 border border-zinc-700 p-4 text-white rounded-lg focus:outline-none focus:border-brand-red transition-colors">
+            </div>
+          </div>
+          <div class="flex flex-col">
+            <label for="bk-phone" class="text-xs uppercase tracking-widest font-bold text-gray-400 mb-2">Teléfono de contacto</label>
+            <input id="bk-phone" name="phone" type="tel" placeholder="+54 11 ..." autocomplete="tel" class="w-full bg-black/50 border border-zinc-700 p-4 text-white rounded-lg focus:outline-none focus:border-brand-red transition-colors">
+          </div>
+          <div class="grid grid-cols-2 gap-6">
+            <div class="flex flex-col">
+              <label for="bk-checkin" class="text-xs uppercase tracking-widest font-bold text-gray-400 mb-2">Fecha de Llegada</label>
+              <input id="bk-checkin" name="checkin" type="date" required class="bg-black/50 border border-zinc-700 p-4 text-white rounded-lg focus:outline-none focus:border-brand-red transition-colors">
+            </div>
+            <div class="flex flex-col">
+              <label for="bk-checkout" class="text-xs uppercase tracking-widest font-bold text-gray-400 mb-2">Fecha de Salida</label>
+              <input id="bk-checkout" name="checkout" type="date" required class="bg-black/50 border border-zinc-700 p-4 text-white rounded-lg focus:outline-none focus:border-brand-red transition-colors">
+            </div>
+          </div>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-6">
+            <div class="flex flex-col">
+              <label for="bk-adults" class="text-xs uppercase tracking-widest font-bold text-gray-400 mb-2">Adultos (12+ años)</label>
+              <select id="bk-adults" name="adults" class="bg-black/50 border border-zinc-700 p-4 text-white rounded-lg focus:outline-none focus:border-brand-red transition-colors">
+                <option value="1" selected>1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option>
+              </select>
+            </div>
+            <div class="flex flex-col">
+              <label for="bk-minors" class="text-xs uppercase tracking-widest font-bold text-gray-400 mb-2">Menores (0-11 años)</label>
+              <select id="bk-minors" name="minors" class="bg-black/50 border border-zinc-700 p-4 text-white rounded-lg focus:outline-none focus:border-brand-red transition-colors">
+                <option value="0" selected>0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
+              </select>
+            </div>
+            <div class="flex flex-col md:col-span-1 col-span-2">
+              <label class="text-xs uppercase tracking-widest font-bold text-gray-400 mb-2">Estado</label>
+              <div id="availability-status" class="bg-black/30 border border-zinc-800 p-4 text-sm text-gray-300 rounded-lg flex items-center justify-center text-center">Seleccioná fechas para ver disponibilidad.</div>
+            </div>
+          </div>
+          
+          <div class="bg-black/40 p-6 rounded-xl border border-zinc-800 space-y-3">
+            <div class="flex items-center justify-between"><span class="text-gray-400">Llegada</span><span id="bk-checkin-label" class="font-bold text-white">-</span></div>
+            <div class="flex items-center justify-between border-t border-zinc-800/50 pt-3"><span class="text-gray-400">Salida</span><span id="bk-checkout-label" class="font-bold text-white">-</span></div>
+            <div class="flex items-center justify-between border-t border-zinc-800/50 pt-3"><span class="text-gray-400">Estadía</span><span id="bk-nights" class="font-bold text-white">- noches</span></div>
+            <div class="flex items-center justify-between border-t border-zinc-800/50 pt-3"><span class="text-gray-400 font-semibold">Total estimado</span><span id="bk-total-usd" class="text-2xl font-serif font-bold text-brand-red">-</span></div>
+            <p class="text-[10px] text-gray-500 uppercase tracking-widest text-center mt-4">Tarifas: USD 30 adulto / USD 15 menor por noche. Cancelación gratuita.</p>
+          </div>
+
+          <div id="booking-error" class="hidden text-sm text-red-400 bg-red-400/10 p-3 border border-red-400/20 rounded-lg text-center"></div>
+          
+          <button id="booking-submit" type="submit" class="w-full bg-brand-red py-5 rounded-lg font-bold text-xl hover:bg-brand-dark-red transition-all shadow-lg hover:shadow-brand-red/20 uppercase tracking-widest">
+            CONFIRMAR MI RESERVA
+          </button>
+        </form>
+
+        <div id="success-msg" class="hidden text-center py-10">
+          <div class="w-20 h-20 bg-green-500/20 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl">
+            <i class="fas fa-check"></i>
+          </div>
+          <h3 class="text-3xl font-serif font-bold mb-4">¡Reserva Enviada!</h3>
+          <p class="text-gray-400 mb-8 max-w-md mx-auto">Tu solicitud ha sido procesada correctamente. Te contactaremos pronto para coordinar los detalles.</p>
+          <div id="booking-summary" class="text-left mb-8"></div>
+          <button id="new-booking-btn" type="button" class="w-full border border-zinc-700 py-4 rounded-lg font-bold hover:bg-zinc-800 transition-colors">HACER OTRA RESERVA</button>
+        </div>
+
+        <div class="mt-12 border-t border-zinc-800 pt-8">
+          <div class="flex items-center justify-between mb-6">
+            <div class="text-xs uppercase tracking-widest font-bold text-zinc-500">Últimas fechas reservadas</div>
+            <button id="clear-reservations-btn" type="button" class="text-[10px] uppercase tracking-widest font-bold text-zinc-600 hover:text-white transition-colors">Sincronizar calendario</button>
+          </div>
+          <div id="reservations-list" class="grid gap-3"></div>
+        </div>
+      </div>
+
+      <section class="mt-14 pt-10 border-t border-zinc-800 max-w-5xl mx-auto reveal" aria-labelledby="mapa-contacto-title">
+        <h2 id="mapa-contacto-title" class="text-2xl font-serif mb-6 text-center md:text-left">Contacto y ubicación</h2>
+        <div class="flex flex-col md:flex-row md:items-start gap-8 md:gap-10">
+          <div class="flex-1 min-w-0 space-y-4">
+            <p class="text-lg text-gray-200 leading-relaxed">
+              Santiago del Estero 443, C1075 Cdad. Autónoma de Buenos Aires
+            </p>
+            <p class="text-sm text-gray-500">Mapa de referencia. Los detalles de llegada se coordinan al confirmar la reserva.</p>
+            <a href="./contacto.html" class="inline-flex items-center gap-3 text-lg font-semibold text-brand-red hover:text-white transition py-2">
+              <i class="fas fa-envelope text-2xl"></i> Ir a la página de contacto
+            </a>
+          </div>
+          <div class="w-full max-w-sm md:max-w-xs lg:max-w-sm shrink-0 mx-auto md:mx-0 border border-zinc-800 overflow-hidden rounded-sm h-36 md:h-40 bg-black">
+            <iframe
+              title="Mapa: Santiago del Estero 443, Buenos Aires"
+              class="w-full h-full border-0"
+              loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade"
+              src="https://www.google.com/maps?q=Santiago+del+Estero+443%2C+C1075+CABA%2C+Argentina&output=embed">
+            </iframe>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="./app.js" defer></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+</body>
+</html>

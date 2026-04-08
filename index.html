@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Espacio Romero - Inicio</title>
+  <meta name="description" content="Espacio Romero: alojamiento y arte en Buenos Aires. Conocé nuestras secciones separadas para reservas, tienda, reseñas y contacto.">
+  <meta property="og:title" content="Espacio Romero - Alojamiento & Arte">
+  <meta property="og:description" content="Alojamiento con experiencia artística. Reservas directas y reseñas de visitantes.">
+  <meta property="og:type" content="website">
+  <meta name="theme-color" content="#0a0a0a">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'brand-red': '#cc0000',
+            'brand-black': '#0a0a0a',
+            'brand-dark-red': '#990000',
+          },
+          fontFamily: {
+            serif: ['"Playfair Display"', 'serif'],
+            sans: ['Manrope', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],
+          }
+        }
+      }
+    };
+  </script>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body class="overflow-x-hidden bg-brand-black text-white">
+  <nav class="fixed w-full z-50 bg-black/90 border-b border-brand-red/30">
+    <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+      <a href="./index.html" class="text-2xl font-serif font-bold tracking-widest text-brand-red">ESPACIO <span class="text-white">ROMERO</span></a>
+      <div class="hidden md:flex space-x-6 text-xs uppercase tracking-widest font-semibold text-gray-200">
+        <a href="./index.html" class="hover:text-brand-red transition">Inicio</a>
+        <a href="./alojamiento.html" class="hover:text-brand-red transition">Alojamiento</a>
+        <a href="./artista.html" class="hover:text-brand-red transition">El Artista</a>
+        <div class="relative group">
+          <a href="./tienda.html" class="hover:text-brand-red transition">Tienda</a>
+          <div class="absolute left-0 top-full pt-3 hidden group-hover:block">
+            <div class="bg-black border border-brand-red/40 rounded-sm shadow-lg min-w-[200px] overflow-hidden">
+              <a href="./tienda.html#tienda-obras" class="block px-4 py-3 text-xs uppercase tracking-widest text-gray-200 hover:bg-white hover:text-black">Obras</a>
+              <a href="./tienda.html#tienda-artesanias" class="block px-4 py-3 text-xs uppercase tracking-widest text-gray-200 hover:bg-white hover:text-black">Artesanías</a>
+              <a href="./tienda.html#tienda-remeras" class="block px-4 py-3 text-xs uppercase tracking-widest text-gray-200 hover:bg-white hover:text-black">Remeras</a>
+              <a href="./catalogo.html" class="block px-4 py-3 text-xs uppercase tracking-widest text-gray-200 hover:bg-white hover:text-black border-t border-zinc-800">Catálogo completo</a>
+            </div>
+          </div>
+        </div>
+        <a href="./resenas.html" class="hover:text-brand-red transition">Reseñas</a>
+        <a href="./contacto.html" class="hover:text-brand-red transition">Contacto</a>
+      </div>
+      <button class="md:hidden text-white text-2xl" id="menu-btn" aria-label="Abrir menú">
+        <i class="fas fa-bars"></i>
+      </button>
+    </div>
+    <div id="mobile-menu" class="hidden md:hidden border-t border-brand-red/30 bg-black/95">
+      <div class="container mx-auto px-6 py-6 flex flex-col gap-4 text-sm uppercase tracking-widest font-semibold text-gray-200">
+        <a href="./index.html" class="hover:text-brand-red transition">Inicio</a>
+        <a href="./alojamiento.html" class="hover:text-brand-red transition">Alojamiento</a>
+        <a href="./artista.html" class="hover:text-brand-red transition">El Artista</a>
+        <div class="space-y-2">
+          <a href="./tienda.html" class="hover:text-brand-red transition">Tienda</a>
+          <div class="pl-4 flex flex-col gap-2 text-xs font-semibold uppercase tracking-widest text-gray-400">
+            <a href="./tienda.html#tienda-obras" class="hover:text-white transition">Obras</a>
+            <a href="./tienda.html#tienda-artesanias" class="hover:text-white transition">Artesanías</a>
+            <a href="./tienda.html#tienda-remeras" class="hover:text-white transition">Remeras</a>
+            <a href="./catalogo.html" class="hover:text-white transition">Catálogo completo</a>
+          </div>
+        </div>
+        <a href="./resenas.html" class="hover:text-brand-red transition">Reseñas</a>
+        <a href="./contacto.html" class="hover:text-brand-red transition">Contacto</a>
+      </div>
+    </div>
+  </nav>
+
+  <header class="h-screen flex items-center justify-center hero-gradient text-center px-6 relative overflow-hidden">
+    <div class="absolute inset-0 bg-brand-black/20 pointer-events-none"></div>
+    <div class="max-w-4xl hero-shell relative z-10">
+      <h1 data-edit-key="hero_titulo" data-edit-label="Título principal" class="text-6xl md:text-8xl font-serif font-bold mb-6 hero-title tracking-tighter">Espacio Romero</h1>
+      <p data-edit-key="hero_subtitulo" data-edit-label="Subtítulo principal" class="text-xl md:text-3xl mb-10 font-light italic text-gray-100 hero-subtitle leading-relaxed max-w-3xl mx-auto">Alojamiento en Buenos Aires con reserva directa y experiencia artística.</p>
+      <div class="flex flex-col md:flex-row gap-6 justify-center hero-cta">
+        <a href="./alojamiento.html" class="btn btn-primary px-10 py-5 text-lg shadow-2xl shadow-brand-red/20 hover:-translate-y-1 transition-transform">Reservar alojamiento <i class="fas fa-arrow-right ml-2"></i></a>
+        <a href="./tienda.html" class="btn btn-ghost px-10 py-5 text-lg backdrop-blur-md border-white/20 hover:bg-white/10 hover:-translate-y-1 transition-transform">Explorar tienda <i class="fas fa-store ml-2"></i></a>
+      </div>
+      <div class="mt-16 flex flex-wrap justify-center gap-8 text-sm uppercase tracking-[0.2em] font-semibold text-gray-300/80 hero-points">
+        <div class="flex items-center gap-3 group"><i class="fas fa-check text-brand-red group-hover:scale-125 transition-transform"></i> Sin intermediarios</div>
+        <div class="flex items-center gap-3 group"><i class="fas fa-check text-brand-red group-hover:scale-125 transition-transform"></i> Disponibilidad real</div>
+        <div class="flex items-center gap-3 group"><i class="fas fa-check text-brand-red group-hover:scale-125 transition-transform"></i> Atención personal</div>
+      </div>
+    </div>
+    <div class="absolute bottom-10 left-1/2 -translate-x-1/2 animate-bounce text-white/30">
+      <i class="fas fa-chevron-down text-2xl"></i>
+    </div>
+  </header>
+
+  <section class="py-32 px-6 bg-brand-black relative">
+    <div class="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-zinc-900 to-transparent"></div>
+    <div class="container mx-auto">
+      <div class="text-center mb-20 reveal">
+        <h2 data-edit-key="home_features_title" data-edit-label="Título de secciones" class="text-4xl md:text-5xl font-serif font-bold mb-4">Descubrí el Espacio</h2>
+        <div class="w-24 h-1 bg-brand-red mx-auto"></div>
+      </div>
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <a class="feature-card reveal group overflow-hidden" href="./alojamiento.html">
+          <div class="feature-card-top mb-6">
+            <div class="feature-icon bg-zinc-800 w-16 h-16 flex items-center justify-center rounded-full group-hover:bg-brand-red group-hover:text-white transition-all duration-500"><i class="fas fa-bed text-2xl"></i></div>
+            <span class="feature-tag bg-brand-red/10 text-brand-red border border-brand-red/20 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest">Directo</span>
+          </div>
+          <h3 data-edit-key="feat_aloj_title" data-edit-label="Título Alojamiento" class="text-3xl font-serif mb-4 group-hover:text-brand-red transition-colors">Alojamiento</h3>
+          <p data-edit-key="feat_aloj_desc" data-edit-label="Desc. Alojamiento" class="text-gray-400 leading-relaxed">Reservas directas, disponibilidad en tiempo real y confirmación sin vueltas.</p>
+          <div class="mt-6 text-brand-red font-bold text-xs uppercase tracking-widest flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">Ver disponibilidad <i class="fas fa-arrow-right"></i></div>
+        </a>
+        
+        <a class="feature-card reveal group overflow-hidden" href="./artista.html">
+          <div class="feature-card-top mb-6">
+            <div class="feature-icon bg-zinc-800 w-16 h-16 flex items-center justify-center rounded-full group-hover:bg-brand-red group-hover:text-white transition-all duration-500"><i class="fas fa-palette text-2xl"></i></div>
+            <span class="feature-tag bg-brand-red/10 text-brand-red border border-brand-red/20 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest">Historia</span>
+          </div>
+          <h3 data-edit-key="feat_art_title" data-edit-label="Título Artista" class="text-3xl font-serif mb-4 group-hover:text-brand-red transition-colors">El Artista</h3>
+          <p data-edit-key="feat_art_desc" data-edit-label="Desc. Artista" class="text-gray-400 leading-relaxed">Conocé la visión y la historia de Juan Carlos Romero detrás de cada rincón.</p>
+          <div class="mt-6 text-brand-red font-bold text-xs uppercase tracking-widest flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">Conocer historia <i class="fas fa-arrow-right"></i></div>
+        </a>
+
+        <a class="feature-card reveal group overflow-hidden" href="./tienda.html">
+          <div class="feature-card-top mb-6">
+            <div class="feature-icon bg-zinc-800 w-16 h-16 flex items-center justify-center rounded-full group-hover:bg-brand-red group-hover:text-white transition-all duration-500"><i class="fas fa-store text-2xl"></i></div>
+            <span class="feature-tag bg-brand-red/10 text-brand-red border border-brand-red/20 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest">Obras</span>
+          </div>
+          <h3 data-edit-key="feat_shop_title" data-edit-label="Título Tienda" class="text-3xl font-serif mb-4 group-hover:text-brand-red transition-colors">Tienda de Arte</h3>
+          <p data-edit-key="feat_shop_desc" data-edit-label="Desc. Tienda" class="text-gray-400 leading-relaxed">Explorá piezas únicas, artesanías y el catálogo exclusivo de la casa.</p>
+          <div class="mt-6 text-brand-red font-bold text-xs uppercase tracking-widest flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">Ir a la tienda <i class="fas fa-arrow-right"></i></div>
+        </a>
+
+        <a class="feature-card reveal group overflow-hidden" href="./resenas.html">
+          <div class="feature-card-top mb-6">
+            <div class="feature-icon bg-zinc-800 w-16 h-16 flex items-center justify-center rounded-full group-hover:bg-brand-red group-hover:text-white transition-all duration-500"><i class="fas fa-star text-2xl"></i></div>
+            <span class="feature-tag bg-brand-red/10 text-brand-red border border-brand-red/20 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest">Opiniones</span>
+          </div>
+          <h3 data-edit-key="feat_rev_title" data-edit-label="Título Reseñas" class="text-3xl font-serif mb-4 group-hover:text-brand-red transition-colors">Reseñas</h3>
+          <p data-edit-key="feat_rev_desc" data-edit-label="Desc. Reseñas" class="text-gray-400 leading-relaxed">Experiencias reales de quienes ya vivieron el Espacio Romero.</p>
+          <div class="mt-6 text-brand-red font-bold text-xs uppercase tracking-widest flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">Leer reseñas <i class="fas fa-arrow-right"></i></div>
+        </a>
+
+        <a class="feature-card reveal group overflow-hidden md:col-span-2 lg:col-span-1" href="./contacto.html">
+          <div class="feature-card-top mb-6">
+            <div class="feature-icon bg-zinc-800 w-16 h-16 flex items-center justify-center rounded-full group-hover:bg-brand-red group-hover:text-white transition-all duration-500"><i class="fas fa-envelope text-2xl"></i></div>
+            <span class="feature-tag bg-brand-red/10 text-brand-red border border-brand-red/20 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest">Canales</span>
+          </div>
+          <h3 data-edit-key="feat_cont_title" data-edit-label="Título Contacto" class="text-3xl font-serif mb-4 group-hover:text-brand-red transition-colors">Contacto</h3>
+          <p data-edit-key="feat_cont_desc" data-edit-label="Desc. Contacto" class="text-gray-400 leading-relaxed">¿Dudas o pedidos especiales? Estamos a un mensaje de distancia.</p>
+          <div class="mt-6 text-brand-red font-bold text-xs uppercase tracking-widest flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">Enviar mensaje <i class="fas fa-arrow-right"></i></div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <footer class="bg-black py-16 px-6 border-t border-zinc-800/50 relative overflow-hidden">
+    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-px bg-gradient-to-r from-transparent via-brand-red/50 to-transparent"></div>
+    <div class="container mx-auto">
+      <div class="grid md:grid-cols-3 gap-12 mb-12 text-center md:text-left">
+        <div class="space-y-4">
+          <a href="./index.html" class="text-2xl font-serif font-bold tracking-widest text-brand-red">ESPACIO <span class="text-white">ROMERO</span></a>
+          <p data-edit-key="footer_bio" data-edit-label="Bio Footer" class="text-gray-500 text-sm leading-relaxed">Un refugio donde el arte y la hospitalidad se encuentran en el corazón de Buenos Aires.</p>
+        </div>
+        <div class="space-y-4">
+          <h4 class="text-white font-bold uppercase tracking-widest text-xs">Navegación</h4>
+          <ul class="text-gray-500 text-sm space-y-2">
+            <li><a href="./alojamiento.html" class="hover:text-brand-red transition">Alojamiento</a></li>
+            <li><a href="./artista.html" class="hover:text-brand-red transition">El Artista</a></li>
+            <li><a href="./tienda.html" class="hover:text-brand-red transition">Tienda de Arte</a></li>
+            <li><a href="./resenas.html" class="hover:text-brand-red transition">Reseñas</a></li>
+          </ul>
+        </div>
+        <div class="space-y-4">
+          <h4 class="text-white font-bold uppercase tracking-widest text-xs">Contacto</h4>
+          <ul class="text-gray-500 text-sm space-y-2">
+            <li><a href="mailto:espacioromero.ar@gmail.com" class="hover:text-brand-red transition">espacioromero.ar@gmail.com</a></li>
+            <li><a href="./contacto.html" class="hover:text-brand-red transition">Formulario de contacto</a></li>
+            <li class="flex justify-center md:justify-start gap-4 pt-2">
+              <a href="https://www.instagram.com/espacioromero.ar/" target="_blank" class="text-xl hover:text-brand-red transition"><i class="fab fa-instagram"></i></a>
+              <a href="https://www.airbnb.com.ar/rooms/1640510292843045372" target="_blank" class="text-xl hover:text-brand-red transition"><i class="fab fa-airbnb"></i></a>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div class="pt-8 border-t border-zinc-900 text-center text-gray-600 text-[10px] uppercase tracking-[0.2em]">
+        &copy; 2026 Espacio Romero &middot; <span data-edit-key="footer_credits" data-edit-label="Créditos">Arte & Hospitalidad</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="./app.js" defer></script>
+</body>
+</html>

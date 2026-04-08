@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Espacio Romero - Contacto</title>
+  <meta name="description" content="Contacto directo con Espacio Romero para reservas y consultas.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script>tailwind.config={theme:{extend:{colors:{'brand-red':'#cc0000','brand-black':'#0a0a0a'}}}};</script>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body class="bg-brand-black text-white">
+  <nav class="fixed w-full z-50 bg-black/90 border-b border-brand-red/30">
+    <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+      <a href="./index.html" class="text-2xl font-serif font-bold tracking-widest text-brand-red">ESPACIO <span class="text-white">ROMERO</span></a>
+      <div class="hidden md:flex space-x-6 text-xs uppercase tracking-widest font-semibold text-gray-200">
+        <a href="./index.html">Inicio</a><a href="./alojamiento.html">Alojamiento</a><a href="./artista.html">El Artista</a><div class="relative group inline-block"><a href="./tienda.html">Tienda</a><div class="absolute left-0 top-full pt-3 hidden group-hover:block"><div class="bg-black border border-brand-red/40 rounded-sm shadow-lg min-w-[200px] overflow-hidden"><a href="./tienda.html#tienda-obras" class="block px-4 py-3 text-xs uppercase tracking-widest text-gray-200 hover:bg-white hover:text-black">Obras</a><a href="./tienda.html#tienda-artesanias" class="block px-4 py-3 text-xs uppercase tracking-widest text-gray-200 hover:bg-white hover:text-black">Artesanías</a><a href="./tienda.html#tienda-remeras" class="block px-4 py-3 text-xs uppercase tracking-widest text-gray-200 hover:bg-white hover:text-black">Remeras</a><a href="./catalogo.html" class="block px-4 py-3 text-xs uppercase tracking-widest text-gray-200 hover:bg-white hover:text-black border-t border-zinc-800">Catálogo completo</a></div></div></div><a href="./resenas.html">Reseñas</a><a href="./contacto.html" class="text-brand-red">Contacto</a>
+      </div>
+      <button class="md:hidden text-white text-2xl" id="menu-btn" aria-label="Abrir menú"><i class="fas fa-bars"></i></button>
+    </div>
+    <div id="mobile-menu" class="hidden md:hidden border-t border-brand-red/30 bg-black/95">
+      <div class="container mx-auto px-6 py-6 flex flex-col gap-4 text-sm uppercase tracking-widest font-semibold text-gray-200">
+        <a href="./index.html">Inicio</a><a href="./alojamiento.html">Alojamiento</a><a href="./artista.html">El Artista</a>
+        <div class="space-y-2">
+          <a href="./tienda.html">Tienda</a>
+          <div class="pl-4 flex flex-col gap-2 text-xs font-semibold uppercase tracking-widest text-gray-400">
+            <a href="./tienda.html#tienda-obras" class="hover:text-white transition">Obras</a>
+            <a href="./tienda.html#tienda-artesanias" class="hover:text-white transition">Artesanías</a>
+            <a href="./tienda.html#tienda-remeras" class="hover:text-white transition">Remeras</a>
+            <a href="./catalogo.html" class="hover:text-white transition">Catálogo completo</a>
+          </div>
+        </div>
+        <a href="./resenas.html">Reseñas</a><a href="./contacto.html" class="text-brand-red">Contacto</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="pt-28 pb-20 px-6 bg-zinc-900 min-h-screen">
+    <div class="container mx-auto max-w-3xl">
+      <h1 class="text-4xl font-serif font-bold mb-4 section-title text-center">Contacto</h1>
+      <p class="text-gray-400 text-center mb-12">Consultas y reservas por canales directos.</p>
+
+      <div data-edit-key="cont_card_wrap" data-edit-label="Contenedor contacto" class="bg-black border border-zinc-800 p-8 space-y-6 reveal shadow-2xl">
+        <div class="flex items-center gap-3"><i class="fas fa-map-marker-alt text-brand-red"></i> <span data-edit-key="cont_address" data-edit-label="Dirección">Santiago del Estero 443, C1075 CABA</span></div>
+        <div class="flex items-center gap-3"><i class="fas fa-envelope text-brand-red"></i> <a class="hover:text-brand-red transition" data-edit-key="cont_email" data-edit-label="Email contacto" href="mailto:espacioromero.ar@gmail.com">espacioromero.ar@gmail.com</a></div>
+        <div class="flex items-center gap-3"><i class="fas fa-phone text-brand-red"></i> <a class="hover:text-brand-red transition" data-edit-key="cont_phone" data-edit-label="Teléfono contacto" href="tel:+5491112345678">+54 9 11 1234 5678</a></div>
+        <div class="flex items-center gap-3"><i class="fab fa-instagram text-brand-red"></i> <a class="hover:text-brand-red transition" target="_blank" rel="noreferrer" data-edit-key="cont_ig" data-edit-label="IG contacto" href="https://www.instagram.com/espacioromero.ar/?hl=es%2F">@espacioromero.ar</a></div>
+        <div class="pt-4 border-t border-zinc-800 space-y-3">
+          <div class="text-xs uppercase tracking-widest text-gray-500">Reservas y reseñas en plataformas</div>
+          <div class="flex flex-col sm:flex-row gap-3">
+            <a class="inline-flex items-center gap-2 text-sm text-gray-300 hover:text-brand-red transition" target="_blank" rel="noreferrer" href="https://www.airbnb.com.ar/rooms/1640510292843045372"><i class="fab fa-airbnb text-brand-red"></i> Perfil en Airbnb</a>
+            <a class="inline-flex items-center gap-2 text-sm text-gray-300 hover:text-brand-red transition" target="_blank" rel="noreferrer" href="https://www.booking.com/hotel/ar/espaciosa-casa-en-pleno-centro-porteno.es-ar.html"><i class="fas fa-bed text-brand-red"></i> Ficha en Booking.com</a>
+          </div>
+        </div>
+      </div>
+
+      <section class="mt-12 pt-10 border-t border-zinc-800 reveal" aria-labelledby="contacto-mapa-title">
+        <h2 id="contacto-mapa-title" class="text-2xl font-serif mb-6 text-center md:text-left">Ubicación en mapa</h2>
+        <div class="flex flex-col md:flex-row md:items-start gap-8 md:gap-10">
+          <div class="flex-1 min-w-0 space-y-4">
+            <p class="text-lg text-gray-200 leading-relaxed">
+              Santiago del Estero 443, C1075 Cdad. Autónoma de Buenos Aires
+            </p>
+            <p class="text-sm text-gray-500">Misma dirección que el alojamiento Espacio Romero.</p>
+            <a href="./alojamiento.html" class="inline-flex items-center gap-3 text-lg font-semibold text-brand-red hover:text-white transition py-2">
+              <i class="fas fa-house text-2xl"></i> Ver reservas y alojamiento
+            </a>
+          </div>
+          <div class="w-full max-w-sm md:max-w-xs lg:max-w-sm shrink-0 mx-auto md:mx-0 border border-zinc-800 overflow-hidden rounded-sm h-36 md:h-40 bg-black">
+            <iframe
+              title="Mapa: Santiago del Estero 443, Buenos Aires"
+              class="w-full h-full border-0"
+              loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade"
+              src="https://www.google.com/maps?q=Santiago+del+Estero+443%2C+C1075+CABA%2C+Argentina&output=embed">
+            </iframe>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="./app.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Espacio Romero - Tienda de Arte</title>
+  <meta name="description" content="Obras seleccionadas de Espacio Romero y catálogo completo.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script>tailwind.config={theme:{extend:{colors:{'brand-red':'#cc0000','brand-black':'#0a0a0a','brand-dark-red':'#990000'}}}};</script>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body class="bg-brand-black text-white">
+  <nav class="fixed w-full z-50 bg-black/90 border-b border-brand-red/30">
+    <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+      <a href="./index.html" class="text-2xl font-serif font-bold tracking-widest text-brand-red">ESPACIO <span class="text-white">ROMERO</span></a>
+      <div class="hidden md:flex space-x-6 text-xs uppercase tracking-widest font-semibold text-gray-200">
+        <a href="./index.html">Inicio</a><a href="./alojamiento.html">Alojamiento</a><a href="./artista.html">El Artista</a><div class="relative group inline-block"><a href="./tienda.html" class="text-brand-red">Tienda</a><div class="absolute left-0 top-full pt-3 hidden group-hover:block"><div class="bg-black border border-brand-red/40 rounded-sm shadow-lg min-w-[200px] overflow-hidden"><a href="./tienda.html#tienda-obras" class="block px-4 py-3 text-xs uppercase tracking-widest text-gray-200 hover:bg-white hover:text-black">Obras</a><a href="./tienda.html#tienda-artesanias" class="block px-4 py-3 text-xs uppercase tracking-widest text-gray-200 hover:bg-white hover:text-black">Artesanías</a><a href="./tienda.html#tienda-remeras" class="block px-4 py-3 text-xs uppercase tracking-widest text-gray-200 hover:bg-white hover:text-black">Remeras</a><a href="./catalogo.html" class="block px-4 py-3 text-xs uppercase tracking-widest text-gray-200 hover:bg-white hover:text-black border-t border-zinc-800">Catálogo completo</a></div></div></div><a href="./resenas.html">Reseñas</a><a href="./contacto.html">Contacto</a>
+      </div>
+      <button class="md:hidden text-white text-2xl" id="menu-btn" aria-label="Abrir menú"><i class="fas fa-bars"></i></button>
+    </div>
+    <div id="mobile-menu" class="hidden md:hidden border-t border-brand-red/30 bg-black/95">
+      <div class="container mx-auto px-6 py-6 flex flex-col gap-4 text-sm uppercase tracking-widest font-semibold text-gray-200">
+        <a href="./index.html">Inicio</a><a href="./alojamiento.html">Alojamiento</a><a href="./artista.html">El Artista</a>
+        <div class="space-y-2">
+          <a href="./tienda.html" class="text-brand-red">Tienda</a>
+          <div class="pl-4 flex flex-col gap-2 text-xs font-semibold uppercase tracking-widest text-gray-400">
+            <a href="./tienda.html#tienda-obras" class="hover:text-white transition">Obras</a>
+            <a href="./tienda.html#tienda-artesanias" class="hover:text-white transition">Artesanías</a>
+            <a href="./tienda.html#tienda-remeras" class="hover:text-white transition">Remeras</a>
+            <a href="./catalogo.html" class="hover:text-white transition">Catálogo completo</a>
+          </div>
+        </div>
+        <a href="./resenas.html">Reseñas</a><a href="./contacto.html">Contacto</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="pt-28 pb-20 px-6">
+    <div class="container mx-auto">
+      <h1 data-edit-key="tienda_titulo" data-edit-label="Título de la tienda" class="text-4xl font-serif font-bold mb-4 section-title text-center">Tienda de Arte</h1>
+      <p data-edit-key="tienda_subtitulo" data-edit-label="Texto debajo del título" class="mb-10 text-gray-400 text-center">Seleccioná una obra y mirá el detalle sin salir de la página.</p>
+
+      <div id="store-grid" class="space-y-6"></div>
+
+      <div class="mt-8 text-center">
+        <a href="./catalogo.html" class="inline-block border border-white/40 text-white hover:bg-white hover:text-black px-10 py-4 font-bold transition uppercase tracking-widest">
+          Ver catálogo completo
+        </a>
+      </div>
+    </div>
+  </main>
+
+  <div id="product-modal" class="hidden fixed inset-0 z-50">
+    <div class="absolute inset-0 bg-black/80" data-modal-close></div>
+    <div class="relative max-w-4xl mx-auto mt-20 md:mt-24 px-6">
+      <div class="bg-brand-black border border-zinc-800 rounded-sm overflow-hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-zinc-800">
+          <h3 id="modal-title" class="text-xl font-serif font-bold">Detalle</h3>
+          <button type="button" class="text-gray-400 hover:text-white transition" aria-label="Cerrar" data-modal-close><i class="fas fa-xmark text-xl"></i></button>
+        </div>
+        <div class="grid md:grid-cols-2 gap-0">
+          <div class="bg-black"><img id="modal-img" src="" alt="" class="w-full h-80 md:h-full object-cover"></div>
+          <div class="p-6 md:p-8">
+            <div class="text-xs uppercase tracking-widest text-gray-500">Tienda de Arte</div>
+            <div id="modal-product-title" class="text-3xl font-serif font-bold mt-3"></div>
+            <div id="modal-product-desc" class="text-gray-300 mt-4 leading-relaxed"></div>
+            <div class="mt-6 flex items-center justify-between gap-4"><div class="text-gray-400 text-sm">Precio</div><div id="modal-product-price" class="text-white font-bold"></div></div>
+            <div id="modal-catalog" class="hidden mt-6 border-t border-zinc-800 pt-6">
+              <div class="text-xs uppercase tracking-widest text-gray-500 mb-3">Catálogo</div>
+              <div id="modal-catalog-list" class="grid grid-cols-2 gap-3"></div>
+            </div>
+            <div class="mt-8 grid gap-3">
+              <a href="./alojamiento.html" class="w-full bg-brand-red py-3 font-bold hover:bg-brand-dark-red transition text-center uppercase tracking-widest" data-modal-close>Reservar alojamiento</a>
+              <a href="mailto:info@espacioromero.com?subject=Consulta%20Tienda%20de%20Arte%20-%20Espacio%20Romero" class="w-full border border-zinc-700 py-3 font-bold hover:bg-white hover:text-black transition text-center uppercase tracking-widest">Consultar por email</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="./app.js" defer></script>
+  <script src="./store-sync.js" defer></script>
+</body>
+</html>

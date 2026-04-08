@@ -1,0 +1,24 @@
+{
+  "artista.html": {
+    "artista_titulo": "José Romero",
+    "artista_subtitulo": "Un recorrido por su vida y obra",
+    "artista_parrafo1": "José Romero es un artista plástico con más de 40 años de trayectoria. Su obra se caracteriza por la búsqueda constante de texturas y el uso expresivo del color.",
+    "artista_parrafo2": "Desde sus inicios en Buenos Aires hasta sus exposiciones internacionales, ha mantenido una visión única sobre la realidad urbana y social.",
+    "artista_cta": "VER CATÁLOGO DE OBRAS",
+    "artista_foto": "img/foto1.jpeg",
+    "artista_galeria": [
+      "img/foto1.jpeg",
+      "img/foto2.jpeg",
+      "img/foto3.jpeg",
+      "img/foto4.jpeg",
+      "img/foto5.jpeg",
+      "img/foto6.jpeg",
+      "img/foto7.jpeg",
+      "img/foto8.jpeg"
+    ]
+  },
+  "index.html": {
+    "hero_titulo": "Espacio Romero",
+    "hero_subtitulo": "Arte y Alojamiento en Buenos Aires"
+  }
+}

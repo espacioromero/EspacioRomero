@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Acceso propietarios - Espacio Romero</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+  <script>tailwind.config={theme:{extend:{colors:{'brand-red':'#cc0000','brand-black':'#0a0a0a','brand-dark-red':'#990000'}}}};</script>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body class="bg-brand-black text-white min-h-screen">
+  <main class="pt-24 pb-16 px-4 max-w-lg mx-auto">
+    <h1 class="text-3xl md:text-4xl font-serif font-bold text-center mb-2 text-white">Acceso para dueños</h1>
+    <p class="text-gray-400 text-center text-lg mb-10 leading-relaxed">
+      Ingresá la <strong class="text-white">Clave Secreta</strong> para editar los contenidos del sitio.
+    </p>
+
+    <form id="propietarios-form" class="space-y-6 bg-black border-2 border-zinc-700 rounded-lg p-8 shadow-xl">
+      <div id="propietarios-clave-fields" class="space-y-6">
+        <div>
+          <label for="propietarios-clave" class="block text-xl font-semibold text-gray-200 mb-3">Clave Secreta</label>
+          <input
+            id="propietarios-clave"
+            type="password"
+            autocomplete="current-password"
+            placeholder="Escribí aquí..."
+            class="w-full text-2xl p-5 bg-zinc-900 border-2 border-zinc-600 rounded-lg text-white placeholder-gray-600 focus:outline-none focus:border-brand-red"
+          >
+        </div>
+        <button type="submit" id="btn-entrar-local" class="w-full py-6 text-2xl font-bold rounded-lg bg-brand-red hover:bg-brand-dark-red text-white border-2 border-brand-red/50">
+          Entrar al Editor
+        </button>
+      </div>
+      <p id="propietarios-error" class="hidden text-lg text-red-400 text-center">Clave incorrecta. Volvé a intentar.</p>
+    </form>
+
+    <p class="mt-10 text-center text-gray-500 text-sm">
+      <a href="./index.html" class="text-gray-400 hover:text-white underline">Volver al inicio</a>
+    </p>
+  </main>
+  
+  <script src="./app.js" defer></script>
+</body>
+</html>
