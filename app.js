@@ -1905,6 +1905,7 @@ function initializeEditableContent() {
   applySavedContent();
   loadStaticPagesJson();
 
+  if (!isOwnerEditSession() && !window.isStoreOwnerLoggedIn?.()) return;
   if (editableItems.length === 0 && editableImages.length === 0 && editableGalleries.length === 0) return;
 
   // Habilitar edición directa en la página
