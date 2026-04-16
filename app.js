@@ -763,9 +763,9 @@ async function uploadToSupabase(file) {
   const sKey = localStorage.getItem('er_supabase_key');
   const sBucket = localStorage.getItem('er_supabase_bucket');
   const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
-  const filePath = `${sBucket}/${fileName}`;
+  const filePath = `${fileName}`; // Subir a la raíz del bucket para evitar carpetas anidadas innecesarias
 
-  const res = await fetch(`${sUrl}/storage/v1/object/${filePath}`, {
+  const res = await fetch(`${sUrl}/storage/v1/object/${sBucket}/${filePath}`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${sKey}`,
@@ -778,7 +778,7 @@ async function uploadToSupabase(file) {
   const data = await res.json();
   if (!res.ok) throw new Error(data.message || 'Error al subir a Supabase');
 
-  return `${sUrl}/storage/v1/object/public/${filePath}`;
+  return `${sUrl}/storage/v1/object/public/${sBucket}/${filePath}`;
 }
 
 async function saveJsonToSupabase(fileName, content) {
@@ -791,11 +791,11 @@ async function saveJsonToSupabase(fileName, content) {
   }
 
   const blob = new Blob([JSON.stringify(content, null, 2)], { type: 'application/json' });
-  const filePath = `${sBucket}/${fileName}`;
+  const filePath = `${fileName}`;
 
   // Subir con x-upsert para sobrescribir el anterior
   try {
-    const res = await fetch(`${sUrl}/storage/v1/object/${filePath}`, {
+    const res = await fetch(`${sUrl}/storage/v1/object/${sBucket}/${filePath}`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${sKey}`,
@@ -1831,10 +1831,16 @@ function initializeEditableContent() {
           window.__remotePages = cloud;
           const cloudData = cloud[pageId];
           if (cloudData) {
-            // Si NO estamos editando, o si el localStorage está vacío, mandamos lo de la nube
-            if (!isOwnerEditSession() || !localStorage.getItem(pageKey)) {
+            // Siempre actualizamos localStorage con lo de la nube para asegurar sincronización
+            // Solo si NO estamos en una sesión de edición activa con cambios locales pendientes
+            const inSession = isOwnerEditSession();
+            if (!inSession || !localStorage.getItem(pageKey)) {
               saved = cloudData;
               localStorage.setItem(pageKey, JSON.stringify(saved));
+              applySavedContent();
+            } else {
+              // Si estamos en sesión, usamos lo local pero guardamos lo remoto como referencia
+              saved = safeJsonParse(localStorage.getItem(pageKey), cloudData);
               applySavedContent();
             }
           }
