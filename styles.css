@@ -676,9 +676,16 @@ nav a.text-brand-red::after {
   will-change: transform, opacity;
 }
 
+/* Evitar parpadeo de contenido viejo: ocultamos .reveal hasta que Supabase responda */
+body:not(.supabase-ready) .reveal {
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
 .reveal.is-visible {
   opacity: 1;
   transform: translateY(0);
+  visibility: visible;
 }
 
 /* Failsafe: Si JS tarda demasiado o falla, mostrar con un delay largo */

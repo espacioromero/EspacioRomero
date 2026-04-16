@@ -1824,19 +1824,18 @@ function initializeEditableContent() {
           window.__remotePages = cloud;
           const cloudData = cloud[pageId];
           if (cloudData) {
-            // Siempre actualizamos localStorage con lo de la nube para asegurar sincronización
-            // Solo si NO estamos en una sesión de edición activa con cambios locales pendientes
             const inSession = isOwnerEditSession();
             if (!inSession || !localStorage.getItem(pageKey)) {
               saved = cloudData;
               localStorage.setItem(pageKey, JSON.stringify(saved));
-              applySavedContent();
             } else {
-              // Si estamos en sesión, usamos lo local pero guardamos lo remoto como referencia
               saved = safeJsonParse(localStorage.getItem(pageKey), cloudData);
-              applySavedContent();
             }
+            // Aplicamos los datos frescos de la nube antes de revelar
+            applySavedContent();
           }
+          // Una vez aplicados los datos reales, revelamos el contenido
+          document.body.classList.add('supabase-ready');
           return; 
         }
       } catch (e) {
@@ -1844,23 +1843,22 @@ function initializeEditableContent() {
       }
     }
 
-    // 2. Fallback a GitHub data/pages.json (solo si no cargó de la nube)
+    // 2. Fallback a GitHub data/pages.json
     try {
       const r = await fetch('./data/pages.json', { cache: 'no-cache' });
       if (r.ok) {
         remotePages = await r.json();
-        if (remotePages[pageId]) {
-          // Solo aplicamos si no hay nada en localStorage todavía (primera carga)
-          if (!localStorage.getItem(pageKey)) {
-            saved = remotePages[pageId];
-            localStorage.setItem(pageKey, JSON.stringify(saved));
-            applySavedContent();
-          }
+        if (remotePages[pageId] && !localStorage.getItem(pageKey)) {
+          saved = remotePages[pageId];
+          localStorage.setItem(pageKey, JSON.stringify(saved));
+          applySavedContent();
         }
       }
     } catch (_) {}
     
     window.__remotePages = remotePages;
+    // Si llegamos acá es que falló la nube o se usó fallback, revelamos igual
+    document.body.classList.add('supabase-ready');
   }
 
   function applySavedContent() {
