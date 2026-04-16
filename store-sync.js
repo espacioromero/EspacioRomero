@@ -127,7 +127,7 @@
         const cloud = await res.json();
         if (cloud) {
           // Si NO estamos en sesión de edición, la nube manda sobre todo
-          const inSession = sessionStorage.getItem('er_owner_edit_v1') === 'true';
+          const inSession = sessionStorage.getItem('er_owner_edit_v1') === '1';
           if (!inSession || !localStorage.getItem('er_store_state_v1')) {
             window.__storeState = normalizeStoreState(cloud);
             localStorage.setItem('er_store_state_v1', JSON.stringify(window.__storeState));

@@ -1284,6 +1284,7 @@ function renderCatalogoPage(root) {
     root.appendChild(wrap);
   });
   initializeImageFallbacks();
+  initializeReveal(); // Asegurar que las nuevas piezas se revelen al cargar
 }
 
 function syncTiendaFromState() {
@@ -1806,8 +1807,7 @@ function initializeEditableContent() {
   const editableItems = Array.from(document.querySelectorAll('[data-edit-key]'));
   const editableImages = Array.from(document.querySelectorAll('[data-edit-image]'));
   const editableGalleries = Array.from(document.querySelectorAll('[data-edit-gallery]'));
-  if (editableItems.length === 0 && editableImages.length === 0 && editableGalleries.length === 0) return;
-
+  
   const pageId = location.pathname.split('/').pop() || 'index.html';
   const pageKey = `er_editable_${pageId}`;
   let saved = safeJsonParse(localStorage.getItem(pageKey), {});
@@ -1861,6 +1861,8 @@ function initializeEditableContent() {
     window.__remotePages = remotePages;
     // Si llegamos acá es que falló la nube o se usó fallback, revelamos igual
     document.body.classList.add('supabase-ready');
+    // Forzar un chequeo de reveal por si algo quedó oculto
+    setTimeout(initializeReveal, 100);
   }
 
   function applySavedContent() {
@@ -1903,7 +1905,7 @@ function initializeEditableContent() {
   applySavedContent();
   loadStaticPagesJson();
 
-  if (!isOwnerEditSession() && !window.isStoreOwnerLoggedIn?.()) return;
+  if (editableItems.length === 0 && editableImages.length === 0 && editableGalleries.length === 0) return;
 
   // Habilitar edición directa en la página
   editableItems.forEach(el => {
@@ -2538,9 +2540,10 @@ function initializeNavigation() {
       const anchorPart = parts[1];
       
       const currentPath = window.location.pathname;
-      const isSamePage = !pathPart || 
-                         currentPath.endsWith(pathPart.replace('./', '')) ||
-                         (currentPath === '/' && (pathPart === 'index.html' || pathPart === './index.html'));
+      const cleanPath = pathPart.replace('./', '');
+      const isSamePage = !cleanPath || 
+                         currentPath.endsWith('/' + cleanPath) ||
+                         (currentPath.endsWith('/') && (cleanPath === 'index.html' || !cleanPath));
 
       if (isSamePage && anchorPart) {
         const target = document.getElementById(anchorPart);
@@ -2583,7 +2586,7 @@ function initializeScrollAnimations() {
   });
 
   // Convertimos las secciones automáticas al sistema de reveal premium, excluyendo menús
-  const containers = document.querySelectorAll('section, main > div, footer');
+  const containers = document.querySelectorAll('section, main > div, footer, .catalogo-section, .store-section');
   containers.forEach(el => {
     if (!el.classList.contains('reveal') && !el.closest('nav')) {
       el.classList.add('reveal');
