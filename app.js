@@ -748,6 +748,9 @@ const SUPABASE_PUBLIC = {
   bucket: 'images'
 };
 
+// Exponer configuración pública para otros scripts (como store-sync.js)
+window.SUPABASE_PUBLIC = SUPABASE_PUBLIC;
+
 async function uploadToSupabase(file) {
   const url = localStorage.getItem('er_supabase_url') || SUPABASE_PUBLIC.url;
   const key = localStorage.getItem('er_supabase_key') || SUPABASE_PUBLIC.key;

@@ -97,29 +97,58 @@
     return window.__storeState;
   };
 
-  async function loadStaticStoreJson() {
-    // 1. Intentar cargar desde Supabase (FUENTE DE VERDAD PRIORITARIA)
-    if (window.loadJsonFromSupabase) {
-      const cloud = await window.loadJsonFromSupabase('store.json');
-      if (cloud) {
-        // Siempre priorizamos la nube si NO estamos en una sesión de edición.
-        // Si estamos en sesión, solo usamos la nube si lo local está vacío.
-        const inSession = sessionStorage.getItem('er_owner_edit_v1') === 'true';
-        if (!inSession || !localStorage.getItem('er_store_state_v1')) {
-          window.__storeState = normalizeStoreState(cloud);
-          localStorage.setItem('er_store_state_v1', JSON.stringify(window.__storeState));
-        } else {
-          // Si estamos editando, usamos lo que hay en localStorage (cambios locales sin sincronizar)
-          try {
-            const saved = localStorage.getItem('er_store_state_v1');
-            window.__storeState = normalizeStoreState(JSON.parse(saved));
-          } catch (e) {
+  const loadStoreFromSupabase = async () => {
+    // 1. Usar credenciales locales si existen (dueño), sino usar las públicas (visitantes)
+    const sUrlLocal = localStorage.getItem('er_supabase_url');
+    const sBucketLocal = localStorage.getItem('er_supabase_bucket');
+    
+    // Si no hay local, intentamos usar la pública expuesta en app.js
+    const publicConfig = window.SUPABASE_PUBLIC || {
+      url: 'https://vsjjflpufufludqphwej.supabase.co',
+      bucket: 'images'
+    };
+
+    const sUrl = (sUrlLocal || publicConfig.url).replace(/\/$/, '');
+    const sBucket = sBucketLocal || publicConfig.bucket;
+
+    if (!sUrl || !sBucket) {
+      console.warn('Configuración de Supabase no disponible para sincronización.');
+      return;
+    }
+
+    try {
+      // Agregamos timestamp para saltar cache
+      const res = await fetch(`${sUrl}/storage/v1/object/public/${sBucket}/store.json?t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: { 'pragma': 'no-cache', 'cache-control': 'no-cache' }
+      });
+
+      if (res.ok) {
+        const cloud = await res.json();
+        if (cloud) {
+          // Si NO estamos en sesión de edición, la nube manda sobre todo
+          const inSession = sessionStorage.getItem('er_owner_edit_v1') === 'true';
+          if (!inSession || !localStorage.getItem('er_store_state_v1')) {
             window.__storeState = normalizeStoreState(cloud);
+            localStorage.setItem('er_store_state_v1', JSON.stringify(window.__storeState));
+            console.log('Sincronización global: Tienda actualizada desde la nube.');
+            
+            // Forzar actualización del menú de navegación dinámico
+            if (typeof window.renderDynamicNavMenu === 'function') {
+              window.renderDynamicNavMenu();
+            }
           }
         }
-        return;
       }
+    } catch (e) {
+      console.warn('Falla en la sincronización global de la tienda:', e);
     }
+  };
+
+  async function loadStaticStoreJson() {
+    // 1. Intentar cargar desde Supabase (FUENTE DE VERDAD PRIORITARIA)
+    await loadStoreFromSupabase();
+    if (window.__storeState) return;
 
     // 2. Intentar cargar desde localStorage (respaldo local)
     const saved = localStorage.getItem('er_store_state_v1');
