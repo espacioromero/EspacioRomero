@@ -98,18 +98,14 @@
   };
 
   const loadStoreFromSupabase = async () => {
-    // 1. Usar credenciales locales si existen (dueño), sino usar las públicas (visitantes)
-    const sUrlLocal = localStorage.getItem('er_supabase_url');
-    const sBucketLocal = localStorage.getItem('er_supabase_bucket');
-    
-    // Si no hay local, intentamos usar la pública expuesta en app.js
-    const publicConfig = window.SUPABASE_PUBLIC || {
+    // La lectura pública debe apuntar al mismo origen donde se guarda globalmente.
+    const publicConfig = window.getPublicSupabaseConfig?.() || window.SUPABASE_PUBLIC || {
       url: 'https://vsjjflpufufludqphwej.supabase.co',
+      key: '',
       bucket: 'images'
     };
-
-    const sUrl = (sUrlLocal || publicConfig.url).replace(/\/$/, '');
-    const sBucket = sBucketLocal || publicConfig.bucket;
+    const sUrl = String(publicConfig.url || '').replace(/\/$/, '');
+    const sBucket = String(publicConfig.bucket || '');
 
     if (!sUrl || !sBucket) {
       console.warn('Configuración de Supabase no disponible para sincronización.');

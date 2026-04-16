@@ -750,11 +750,38 @@ const SUPABASE_PUBLIC = {
 
 // Exponer configuración pública para otros scripts (como store-sync.js)
 window.SUPABASE_PUBLIC = SUPABASE_PUBLIC;
+window.getPublicSupabaseConfig = getPublicSupabaseConfig;
+
+function getPublicSupabaseConfig() {
+  // IMPORTANTE:
+  // En GitHub Pages, el sitio "publico" (los visitantes) SIEMPRE va a leer desde SUPABASE_PUBLIC.
+  // Si el dueño guarda en otra URL/bucket configurada en su navegador, esos cambios se vuelven "locales"
+  // (solo los ve ese navegador). Para que el guardado sea global, forzamos a usar SUPABASE_PUBLIC.
+  return {
+    url: SUPABASE_PUBLIC.url,
+    key: SUPABASE_PUBLIC.key,
+    bucket: SUPABASE_PUBLIC.bucket,
+  };
+}
+
+function cleanupLegacySupabaseConfig() {
+  const legacyKeys = ['er_supabase_url', 'er_supabase_key', 'er_supabase_bucket'];
+  let removedAny = false;
+
+  legacyKeys.forEach((key) => {
+    if (localStorage.getItem(key) !== null) {
+      localStorage.removeItem(key);
+      removedAny = true;
+    }
+  });
+
+  if (removedAny) {
+    console.info('Se limpiaron configuraciones locales antiguas de Supabase para forzar el guardado global.');
+  }
+}
 
 async function uploadToSupabase(file) {
-  const url = localStorage.getItem('er_supabase_url') || SUPABASE_PUBLIC.url;
-  const key = localStorage.getItem('er_supabase_key') || SUPABASE_PUBLIC.key;
-  const bucket = localStorage.getItem('er_supabase_bucket') || SUPABASE_PUBLIC.bucket;
+  const { url, key, bucket } = getPublicSupabaseConfig();
 
   const sUrl = url.replace(/\/$/, '');
   const sKey = key;
@@ -779,9 +806,10 @@ async function uploadToSupabase(file) {
 }
 
 async function saveJsonToSupabase(fileName, content) {
-  const sUrl = (localStorage.getItem('er_supabase_url') || SUPABASE_PUBLIC.url).replace(/\/$/, '');
-  const sKey = localStorage.getItem('er_supabase_key') || SUPABASE_PUBLIC.key;
-  const sBucket = localStorage.getItem('er_supabase_bucket') || SUPABASE_PUBLIC.bucket;
+  const { url, key, bucket } = getPublicSupabaseConfig();
+  const sUrl = url.replace(/\/$/, '');
+  const sKey = key;
+  const sBucket = bucket;
   
   const blob = new Blob([JSON.stringify(content, null, 2)], { type: 'application/json' });
   const filePath = `${fileName}`;
@@ -812,8 +840,9 @@ async function saveJsonToSupabase(fileName, content) {
 }
 
 async function loadJsonFromSupabase(fileName) {
-  const sUrl = (localStorage.getItem('er_supabase_url') || SUPABASE_PUBLIC.url).replace(/\/$/, '');
-  const sBucket = localStorage.getItem('er_supabase_bucket') || SUPABASE_PUBLIC.bucket;
+  const { url, bucket } = getPublicSupabaseConfig();
+  const sUrl = url.replace(/\/$/, '');
+  const sBucket = bucket;
   if (!sUrl || !sBucket) return null;
 
   try {
@@ -1514,7 +1543,7 @@ function openTiendaStoreAdmin() {
         <div class="bg-amber-900/20 border border-amber-700/50 p-4 rounded-lg mb-6">
           <p class="text-amber-200 text-sm leading-relaxed italic">
             <strong>Configuración de Supabase:</strong><br>
-            Para subir fotos sin usar GitHub, necesitás la URL y Anon Key de tu proyecto. Las fotos se guardarán en el bucket que elijas (ej: 'images'). <strong>Importante: el bucket debe estar configurado como PUBLIC en Supabase.</strong>
+            Para subir fotos y publicar cambios globales sin usar GitHub, este sitio guarda todo en el bucket público <strong>${escapeHtml(SUPABASE_PUBLIC.bucket)}</strong> del proyecto configurado en el código. Si se usa otra URL o bucket solo en este navegador, los cambios pueden verse locales y no públicos.
           </p>
           <div class="mt-3 grid grid-cols-1 md:grid-cols-3 gap-2">
             <button type="button" id="er-setup-supabase-tienda" class="text-xs bg-amber-700 hover:bg-amber-600 text-white px-3 py-2 rounded">Configurar Supabase</button>
@@ -1564,7 +1593,7 @@ function openTiendaStoreAdmin() {
     });
 
     const updateSupabaseStatus = (btnId, statusId) => {
-      const sUrl = localStorage.getItem('er_supabase_url');
+      const sUrl = SUPABASE_PUBLIC.url;
       const sStatus = overlay.querySelector(`#${statusId}`);
       if (sUrl && sStatus) {
         sStatus.innerHTML = `<i class="fas fa-check-circle text-green-400 mr-1"></i> Conectado: ${new URL(sUrl).hostname}`;
@@ -1576,15 +1605,9 @@ function openTiendaStoreAdmin() {
     updateSupabaseStatus('er-setup-supabase-tienda', 'er-supabase-status-tienda');
 
     overlay.querySelector('#er-setup-supabase-tienda')?.addEventListener('click', () => {
-      const url = window.prompt('URL de Supabase (ej: https://xyz.supabase.co):', localStorage.getItem('er_supabase_url') || '');
-      const key = window.prompt('Anon Key de Supabase:', localStorage.getItem('er_supabase_key') || '');
-      const bucket = window.prompt('Nombre del Bucket (ej: images):', localStorage.getItem('er_supabase_bucket') || 'images');
-      if (url && key) {
-        localStorage.setItem('er_supabase_url', url);
-        localStorage.setItem('er_supabase_key', key);
-        localStorage.setItem('er_supabase_bucket', bucket || 'images');
-        updateSupabaseStatus('er-setup-supabase-tienda', 'er-supabase-status-tienda');
-      }
+      const message = `Este sitio publica usando la configuración fija del proyecto:\nURL: ${SUPABASE_PUBLIC.url}\nBucket público: ${SUPABASE_PUBLIC.bucket}\n\nSi querés cambiar la publicación global, actualizá SUPABASE_PUBLIC en el código.`;
+      window.alert(message);
+      updateSupabaseStatus('er-setup-supabase-tienda', 'er-supabase-status-tienda');
     });
 
     overlay.querySelectorAll('.er-btn-upload').forEach(btn => {
@@ -2032,6 +2055,8 @@ function initializeEditableContent() {
 
         allPages[currentPageId] = next;
         await window.saveJsonToSupabase('pages.json', allPages);
+        saved = next;
+        window.__remotePages = allPages;
         console.log('Sincronización completa con Supabase.');
       } catch (err) {
         console.error('Supabase auto-sync failed:', err);
@@ -2182,7 +2207,7 @@ function openOwnerEditorModal() {
     });
 
     const updateSupabaseStatus = (btnId, statusId) => {
-      const sUrl = localStorage.getItem('er_supabase_url');
+      const sUrl = SUPABASE_PUBLIC.url;
       const sStatus = overlay.querySelector(`#${statusId}`);
       if (sUrl && sStatus) {
         sStatus.innerHTML = `<i class="fas fa-check-circle text-green-400 mr-1"></i> Conectado: ${new URL(sUrl).hostname}`;
@@ -2194,15 +2219,9 @@ function openOwnerEditorModal() {
     updateSupabaseStatus('er-setup-supabase', 'er-supabase-status');
 
     overlay.querySelector('#er-setup-supabase')?.addEventListener('click', () => {
-      const url = window.prompt('URL de Supabase (ej: https://xyz.supabase.co):', localStorage.getItem('er_supabase_url') || '');
-      const key = window.prompt('Anon Key de Supabase:', localStorage.getItem('er_supabase_key') || '');
-      const bucket = window.prompt('Nombre del Bucket (ej: images):', localStorage.getItem('er_supabase_bucket') || 'images');
-      if (url && key) {
-        localStorage.setItem('er_supabase_url', url);
-        localStorage.setItem('er_supabase_key', key);
-        localStorage.setItem('er_supabase_bucket', bucket || 'images');
-        updateSupabaseStatus('er-setup-supabase', 'er-supabase-status');
-      }
+      const message = `Este sitio publica usando la configuración fija del proyecto:\nURL: ${SUPABASE_PUBLIC.url}\nBucket público: ${SUPABASE_PUBLIC.bucket}\n\nSi querés cambiar la publicación global, actualizá SUPABASE_PUBLIC en el código.`;
+      window.alert(message);
+      updateSupabaseStatus('er-setup-supabase', 'er-supabase-status');
     });
 
     function renderAdminReviews() {
@@ -2639,6 +2658,8 @@ function initializeReveal() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  cleanupLegacySupabaseConfig();
+
   // Función auxiliar para inicializar con seguridad
   const safeInit = (name, fn) => {
     try {
