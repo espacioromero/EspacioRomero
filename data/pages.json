@@ -19,6 +19,9 @@
   },
   "index.html": {
     "hero_titulo": "Espacio Romero",
-    "hero_subtitulo": "Arte y Alojamiento en Buenos Aires"
+    "hero_subtitulo": "Arte y Alojamiento en Buenos Aires",
+    "hero_p1": "Reserva Directa",
+    "hero_p2": "Ubicación Central",
+    "hero_p3": "Arte y Hospitalidad"
   }
 }

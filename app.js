@@ -1791,6 +1791,8 @@ function syncTiendaProductMeta(key, textValue, imgUrl) {
 
 function applyTextToEditableEl(el, key, raw) {
   const v = String(raw ?? '').trim();
+  if (el.textContent.trim() === v) return; // Evitar parpadeo si es igual
+  
   if (key === 'artista_cta' && el.tagName === 'A') {
     el.innerHTML = `${escapeHtml(v)} <i class="fas fa-arrow-right"></i>`;
     return;

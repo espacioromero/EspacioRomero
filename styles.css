@@ -59,7 +59,8 @@ body::after {
 .hero-title,
 .hero-subtitle,
 .hero-cta,
-.hero-points {
+.hero-points,
+.hero-platform-logos {
   opacity: 0;
   transform: translateY(20px);
 }
@@ -77,6 +78,9 @@ body::after {
 }
 .hero-points {
   animation: heroTextIn 900ms cubic-bezier(0.22, 1, 0.36, 1) 620ms forwards;
+}
+.hero-platform-logos {
+  animation: heroTextIn 900ms cubic-bezier(0.22, 1, 0.36, 1) 780ms forwards;
 }
 
 @keyframes heroSlider {
