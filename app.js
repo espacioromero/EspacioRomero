@@ -742,26 +742,20 @@ function escapeHtml(value) {
     .replaceAll("'", '&#39;');
 }
 
+const SUPABASE_PUBLIC = {
+  url: 'https://vsjjflpufufludqphwej.supabase.co',
+  key: 'sb_publishable_VlicEwXr3xNr90TFJWMXXA_viVcQoTU',
+  bucket: 'images'
+};
+
 async function uploadToSupabase(file) {
-  const url = localStorage.getItem('er_supabase_url') || '';
-  const key = localStorage.getItem('er_supabase_key') || '';
-  const bucket = localStorage.getItem('er_supabase_bucket') || 'images';
+  const url = localStorage.getItem('er_supabase_url') || SUPABASE_PUBLIC.url;
+  const key = localStorage.getItem('er_supabase_key') || SUPABASE_PUBLIC.key;
+  const bucket = localStorage.getItem('er_supabase_bucket') || SUPABASE_PUBLIC.bucket;
 
-  if (!url || !key) {
-    const newUrl = window.prompt('Para usar Supabase, ingresá la URL de tu proyecto:', url);
-    const newKey = window.prompt('Ingresá tu Anon Key de Supabase:', key);
-    if (newUrl && newKey) {
-      localStorage.setItem('er_supabase_url', newUrl);
-      localStorage.setItem('er_supabase_key', newKey);
-      localStorage.setItem('er_supabase_bucket', bucket);
-    } else {
-      throw new Error('Configuración de Supabase incompleta.');
-    }
-  }
-
-  const sUrl = localStorage.getItem('er_supabase_url').replace(/\/$/, '');
-  const sKey = localStorage.getItem('er_supabase_key');
-  const sBucket = localStorage.getItem('er_supabase_bucket');
+  const sUrl = url.replace(/\/$/, '');
+  const sKey = key;
+  const sBucket = bucket;
   const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
   const filePath = `${fileName}`; // Subir a la raíz del bucket para evitar carpetas anidadas innecesarias
 
@@ -782,14 +776,10 @@ async function uploadToSupabase(file) {
 }
 
 async function saveJsonToSupabase(fileName, content) {
-  const sUrl = (localStorage.getItem('er_supabase_url') || '').replace(/\/$/, '');
-  const sKey = localStorage.getItem('er_supabase_key');
-  const sBucket = localStorage.getItem('er_supabase_bucket');
+  const sUrl = (localStorage.getItem('er_supabase_url') || SUPABASE_PUBLIC.url).replace(/\/$/, '');
+  const sKey = localStorage.getItem('er_supabase_key') || SUPABASE_PUBLIC.key;
+  const sBucket = localStorage.getItem('er_supabase_bucket') || SUPABASE_PUBLIC.bucket;
   
-  if (!sUrl || !sKey) {
-    throw new Error('Faltan configurar las credenciales de Supabase (URL o Key).');
-  }
-
   const blob = new Blob([JSON.stringify(content, null, 2)], { type: 'application/json' });
   const filePath = `${fileName}`;
 
@@ -819,8 +809,8 @@ async function saveJsonToSupabase(fileName, content) {
 }
 
 async function loadJsonFromSupabase(fileName) {
-  const sUrl = (localStorage.getItem('er_supabase_url') || '').replace(/\/$/, '');
-  const sBucket = localStorage.getItem('er_supabase_bucket');
+  const sUrl = (localStorage.getItem('er_supabase_url') || SUPABASE_PUBLIC.url).replace(/\/$/, '');
+  const sBucket = localStorage.getItem('er_supabase_bucket') || SUPABASE_PUBLIC.bucket;
   if (!sUrl || !sBucket) return null;
 
   try {
