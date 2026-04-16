@@ -183,8 +183,10 @@ body::after {
   transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-.artist-bio-img-wrap:hover img {
-  transform: translateZ(30px) scale(1.05);
+@media (hover: hover) {
+  .artist-bio-img-wrap:hover img {
+    transform: translateZ(30px) scale(1.05);
+  }
 }
 
 .feature-card {
@@ -208,11 +210,13 @@ body::after {
               background-color 0.6s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-.feature-card:hover {
-  transform: translateY(-12px) rotateX(5deg) rotateY(-3deg);
-  border-color: rgba(204, 0, 0, 0.5);
-  background: rgba(20, 20, 20, 0.6);
-  box-shadow: 0 40px 80px rgba(0, 0, 0, 0.8), 0 0 30px rgba(204, 0, 0, 0.15);
+@media (hover: hover) {
+  .feature-card:hover {
+    transform: translateY(-12px) rotateX(5deg) rotateY(-3deg);
+    border-color: rgba(204, 0, 0, 0.5);
+    background: rgba(20, 20, 20, 0.6);
+    box-shadow: 0 40px 80px rgba(0, 0, 0, 0.8), 0 0 30px rgba(204, 0, 0, 0.15);
+  }
 }
 
 .feature-card:hover::before {
@@ -323,11 +327,13 @@ body::after {
   perspective: 1000px;
 }
 
-.product-card-glass:hover {
-  transform: translateY(-10px) rotateX(4deg) rotateY(2deg);
-  border-color: rgba(204, 0, 0, 0.5);
-  background: rgba(22, 22, 22, 0.85);
-  box-shadow: 0 35px 70px rgba(0, 0, 0, 0.8), 0 0 30px rgba(204, 0, 0, 0.25);
+@media (hover: hover) {
+  .product-card-glass:hover {
+    transform: translateY(-10px) rotateX(4deg) rotateY(2deg);
+    border-color: rgba(204, 0, 0, 0.5);
+    background: rgba(22, 22, 22, 0.85);
+    box-shadow: 0 35px 70px rgba(0, 0, 0, 0.8), 0 0 30px rgba(204, 0, 0, 0.25);
+  }
 }
 
 .product-card-glass:hover::after {
@@ -782,11 +788,13 @@ nav a.text-brand-red::after {
   overflow: hidden;
 }
 
-.amenity-card:hover {
-  transform: translateY(-8px) scale(1.03);
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(204, 0, 0, 0.4);
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4), 0 0 15px rgba(204, 0, 0, 0.1);
+@media (hover: hover) {
+  .amenity-card:hover {
+    transform: translateY(-8px) scale(1.03);
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(204, 0, 0, 0.4);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4), 0 0 15px rgba(204, 0, 0, 0.1);
+  }
 }
 
 .amenity-card i {
@@ -795,9 +803,11 @@ nav a.text-brand-red::after {
   transition: transform 0.4s ease;
 }
 
-.amenity-card:hover i {
-  transform: scale(1.2) rotate(-5deg);
-  filter: drop-shadow(0 0 8px rgba(204, 0, 0, 0.6));
+@media (hover: hover) {
+  .amenity-card:hover i {
+    transform: scale(1.2) rotate(-5deg);
+    filter: drop-shadow(0 0 8px rgba(204, 0, 0, 0.6));
+  }
 }
 
 .amenity-card .amenity-title {
