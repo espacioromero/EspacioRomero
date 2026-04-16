@@ -1957,12 +1957,24 @@ function initializeEditableContent() {
           subtitulo: document.querySelector('[data-edit-key="tienda_subtitulo"]')?.textContent || base.subtitulo,
         };
         
+        // 1. Actualizar estado local
         await window.persistStoreState(state);
+        
+        // 2. Sincronizar con Supabase
         if (window.saveJsonToSupabase) {
+          // Forzamos el guardado de store.json
           await window.saveJsonToSupabase('store.json', state);
         }
+        
+        // 3. Opcional: Si hay cambios en títulos que están en pages.json, sincronizar también
+        try {
+          await persistFromDom();
+        } catch (e) {
+          console.warn('Nota: No se pudo sincronizar pages.json, pero store.json sí se guardó.');
+        }
+
         renderDynamicNavMenu(); // Refrescar menú nav
-        window.alert('¡Todo guardado en la nube con éxito! Ya es público para todos.');
+        window.alert('¡Tienda guardada en la nube con éxito! Los cambios ya son públicos para todos.');
       } catch (e) {
         window.alert('Error al guardar: ' + e.message);
       } finally {
@@ -1981,6 +1993,9 @@ function initializeEditableContent() {
 
   const persistFromDom = async () => {
     const next = {};
+    // Usamos el objeto 'saved' actual como base para no perder lo que ya se cargó
+    Object.assign(next, saved);
+
     editableItems.forEach((el) => {
       const key = el.getAttribute('data-edit-key');
       if (!key) return;
@@ -1998,21 +2013,33 @@ function initializeEditableContent() {
     editableGalleries.forEach((gal) => {
       const key = gal.getAttribute('data-edit-gallery');
       if (!key) return;
+      // Las galerías ya se guardaron en 'saved' durante el click del botón save
       if (saved[key]) next[key] = saved[key];
     });
+    
     localStorage.setItem(pageKey, JSON.stringify(next));
     
     // Sincronizar con Supabase automáticamente al persistir desde el DOM
     if (typeof window.saveJsonToSupabase === 'function') {
-      const currentPageId = location.pathname.split('/').pop() || 'index.html';
-      const allPages = window.__remotePages || {};
-      allPages[currentPageId] = next;
-      
       try {
+        const currentPageId = location.pathname.split('/').pop() || 'index.html';
+        
+        // Recargar pages.json de Supabase antes de guardar para no pisar cambios de otras páginas
+        let allPages = {};
+        try {
+          const remote = await window.loadJsonFromSupabase('pages.json');
+          if (remote) allPages = remote;
+        } catch (e) {
+          console.warn('No se pudo precargar pages.json de la nube, usando local base.');
+          allPages = window.__remotePages || {};
+        }
+
+        allPages[currentPageId] = next;
         await window.saveJsonToSupabase('pages.json', allPages);
+        console.log('Sincronización completa con Supabase.');
       } catch (err) {
         console.error('Supabase auto-sync failed:', err);
-        throw new Error('No se pudo sincronizar con la nube (Supabase). Verificá tu conexión o configuración.');
+        throw new Error('No se pudo sincronizar con la nube: ' + err.message);
       }
     }
   };
@@ -2426,7 +2453,18 @@ function openOwnerEditorModal() {
     });
 
     overlay.querySelector('#er-owner-save')?.addEventListener('click', async () => {
-      // Aplicar cambios desde los inputs al DOM antes de persistir
+      // 1. PRIMERO: Actualizar el objeto 'saved' local con los valores de los inputs
+      overlay.querySelectorAll('textarea[data-edit-key]').forEach((ta) => {
+        const key = ta.dataset.editKey;
+        if (key) saved[key] = ta.value;
+      });
+      
+      overlay.querySelectorAll('input[data-edit-image]').forEach((inp) => {
+        const key = inp.dataset.editImage;
+        if (key) saved[key] = inp.value.trim();
+      });
+
+      // 2. SEGUNDO: Aplicar esos cambios al DOM para que persistFromDom los vea
       overlay.querySelectorAll('textarea[data-edit-key]').forEach((ta) => {
         const key = ta.dataset.editKey;
         const el = editableItems.find(x => x.getAttribute('data-edit-key') === key);
@@ -2456,6 +2494,7 @@ function openOwnerEditorModal() {
       });
       
       try {
+        // 3. TERCERO: Persistir a Supabase usando los datos actualizados del DOM
         await persistFromDom();
         close();
         window.alert('¡Contenido sincronizado en la nube! Los cambios ya son visibles para todos.');

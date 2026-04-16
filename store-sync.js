@@ -102,16 +102,20 @@
     if (window.loadJsonFromSupabase) {
       const cloud = await window.loadJsonFromSupabase('store.json');
       if (cloud) {
-        // Solo sobreescribimos el localStorage si NO estamos en una sesión de edición activa
-        // o si el localStorage está vacío. Esto previene perder cambios al refrescar (F5).
+        // Siempre priorizamos la nube si NO estamos en una sesión de edición.
+        // Si estamos en sesión, solo usamos la nube si lo local está vacío.
         const inSession = sessionStorage.getItem('er_owner_edit_v1') === 'true';
         if (!inSession || !localStorage.getItem('er_store_state_v1')) {
           window.__storeState = normalizeStoreState(cloud);
           localStorage.setItem('er_store_state_v1', JSON.stringify(window.__storeState));
         } else {
-          // Si estamos editando, usamos lo que hay en localStorage (cambios sin guardar)
-          const saved = localStorage.getItem('er_store_state_v1');
-          window.__storeState = normalizeStoreState(JSON.parse(saved));
+          // Si estamos editando, usamos lo que hay en localStorage (cambios locales sin sincronizar)
+          try {
+            const saved = localStorage.getItem('er_store_state_v1');
+            window.__storeState = normalizeStoreState(JSON.parse(saved));
+          } catch (e) {
+            window.__storeState = normalizeStoreState(cloud);
+          }
         }
         return;
       }
