@@ -2557,38 +2557,93 @@ function initializeReveal() {
   const revealElements = document.querySelectorAll('.reveal');
   if (revealElements.length === 0) return;
   
+  // Opción para móviles: ser más flexible con el margen
+  const isMobile = window.innerWidth < 768;
+  const margin = isMobile ? '0px' : '0px 0px -50px 0px';
+
   const revealObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
         entry.target.classList.add('is-visible');
+        // Una vez visible, dejamos de observar para ahorrar recursos
+        revealObserver.unobserve(entry.target);
       }
     });
   }, { 
-    threshold: 0.1,
-    rootMargin: '0px 0px -50px 0px'
+    threshold: 0.05, // Bajamos el umbral para que se active antes
+    rootMargin: margin
   });
 
   revealElements.forEach((el, index) => {
+    // Si ya es visible por alguna razón, no hacer nada
+    if (el.classList.contains('is-visible')) return;
+
     // Si el padre tiene la clase stagger-container, inyectamos el índice para el CSS
-    if (el.parentElement && el.parentElement.classList.contains('stagger-container')) {
-      el.style.setProperty('--stagger-idx', index % 10);
+    if (el.parentElement && (el.parentElement.classList.contains('stagger-container') || el.parentElement.tagName === 'MAIN')) {
+      el.style.setProperty('--stagger-idx', index % 15);
     }
     revealObserver.observe(el);
   });
+
+  // Fallback: Si después de 2 segundos algo sigue invisible en el viewport inicial, lo forzamos
+  setTimeout(() => {
+    document.querySelectorAll('.reveal:not(.is-visible)').forEach(el => {
+      const rect = el.getBoundingClientRect();
+      if (rect.top < window.innerHeight) {
+        el.classList.add('is-visible');
+      }
+    });
+  }, 1500);
 }
 
-document.addEventListener('DOMContentLoaded', async () => {
-  initializeNavigation();
-  initializeHeroBackground();
-  await (window.initStoreSync?.() ?? Promise.resolve());
-  initializePropietariosLogin();
-  initializeTiendaStorePage();
-  initializeCatalogoPage();
-  initializeImageFallbacks();
-  initializeBooking();
-  initializeReviews();
-  initializeStore();
-  initializeEditableContent();
-  initializeReveal();
-  initializeScrollAnimations();
+document.addEventListener('DOMContentLoaded', () => {
+  // Función auxiliar para inicializar con seguridad
+  const safeInit = (name, fn) => {
+    try {
+      fn();
+    } catch (e) {
+      console.error(`Error inicializando ${name}:`, e);
+    }
+  };
+
+  // Inicializaciones inmediatas (no bloqueantes)
+  safeInit('Navigation', initializeNavigation);
+  safeInit('Hero', initializeHeroBackground);
+  safeInit('Fallbacks', initializeImageFallbacks);
+  safeInit('Booking', initializeBooking);
+  safeInit('Reviews', initializeReviews);
+  safeInit('Store', initializeStore);
+  safeInit('Login', initializePropietariosLogin);
+  
+  // Ejecutamos reveal lo antes posible para que la página no se vea negra
+  safeInit('ScrollAnims', initializeScrollAnimations);
+  safeInit('Reveal', initializeReveal);
+
+  // Failsafe global: si después de 3 segundos la página sigue "negra", forzamos todo
+  setTimeout(() => {
+    const hiddenReveals = document.querySelectorAll('.reveal:not(.is-visible)');
+    if (hiddenReveals.length > 0) {
+      console.warn('Failsafe: Forzando visibilidad de elementos reveal.');
+      hiddenReveals.forEach(el => el.classList.add('is-visible'));
+    }
+  }, 3000);
+
+  // Cargamos datos dinámicos en segundo plano
+  (async () => {
+    try {
+      if (window.initStoreSync) {
+        await window.initStoreSync();
+      }
+      safeInit('StorePage', initializeTiendaStorePage);
+      safeInit('Catalogo', initializeCatalogoPage);
+      safeInit('Editable', initializeEditableContent);
+      
+      // Re-ejecutamos reveal por si se añadieron elementos nuevos dinámicamente
+      setTimeout(() => safeInit('RevealAsync', initializeReveal), 300);
+    } catch (err) {
+      console.error('Error en carga asíncrona:', err);
+      // Fallback: si falla la carga, revelamos todo igual
+      document.querySelectorAll('.reveal').forEach(el => el.classList.add('is-visible'));
+    }
+  })();
 });

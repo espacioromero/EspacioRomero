@@ -8,6 +8,12 @@ body {
   text-rendering: geometricPrecision;
   letter-spacing: 0.005em;
   position: relative;
+  overflow-x: hidden; /* Evitar scroll horizontal accidental */
+}
+
+main {
+  position: relative;
+  z-index: 1;
 }
 body::before {
   content: '';
@@ -658,7 +664,7 @@ nav a.text-brand-red::after {
 /* Reveal on scroll - Premium */
 .reveal {
   opacity: 0;
-  transform: translateY(30px);
+  transform: translateY(20px);
   transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), 
               transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: transform, opacity;
@@ -667,6 +673,16 @@ nav a.text-brand-red::after {
 .reveal.is-visible {
   opacity: 1;
   transform: translateY(0);
+}
+
+/* Failsafe: Si JS tarda demasiado o falla, mostrar con un delay largo */
+@keyframes revealFallback {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.reveal:not(.is-visible) {
+  animation: revealFallback 0.5s forwards;
+  animation-delay: 4s; /* Después de 4 segundos se muestra sí o sí */
 }
 
 /* Staggered reveal for children */
