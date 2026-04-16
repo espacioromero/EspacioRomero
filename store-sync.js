@@ -98,7 +98,26 @@
   };
 
   async function loadStaticStoreJson() {
-    // 1. Intentar cargar desde localStorage (cambios locales)
+    // 1. Intentar cargar desde Supabase (FUENTE DE VERDAD PRIORITARIA)
+    if (window.loadJsonFromSupabase) {
+      const cloud = await window.loadJsonFromSupabase('store.json');
+      if (cloud) {
+        // Solo sobreescribimos el localStorage si NO estamos en una sesión de edición activa
+        // o si el localStorage está vacío. Esto previene perder cambios al refrescar (F5).
+        const inSession = sessionStorage.getItem('er_owner_edit_v1') === 'true';
+        if (!inSession || !localStorage.getItem('er_store_state_v1')) {
+          window.__storeState = normalizeStoreState(cloud);
+          localStorage.setItem('er_store_state_v1', JSON.stringify(window.__storeState));
+        } else {
+          // Si estamos editando, usamos lo que hay en localStorage (cambios sin guardar)
+          const saved = localStorage.getItem('er_store_state_v1');
+          window.__storeState = normalizeStoreState(JSON.parse(saved));
+        }
+        return;
+      }
+    }
+
+    // 2. Intentar cargar desde localStorage (respaldo local)
     const saved = localStorage.getItem('er_store_state_v1');
     if (saved) {
       try {
@@ -107,7 +126,7 @@
       } catch (e) {}
     }
 
-    // 2. Intentar cargar desde el archivo data/store.json (el que está en GitHub)
+    // 3. Intentar cargar desde el archivo data/store.json (el que está en GitHub)
     try {
       const r = await fetch('./data/store.json', { cache: 'no-cache' });
       if (r.ok) {
@@ -116,7 +135,7 @@
       }
     } catch (_) {}
 
-    // 3. Si todo falla, usar defaults
+    // 4. Si todo falla, usar defaults
     if (!window.__storeState) {
       window.__storeState = normalizeStoreState({});
     }

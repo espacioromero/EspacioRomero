@@ -2,6 +2,7 @@ const STORAGE_KEYS = {
   reservations: 'er_reservations_v1',
   reviews: 'er_reviews_v1',
   externalReviews: 'er_external_reviews_v1',
+  calendarCache: 'er_calendar_cache_v2',
 };
 
 /**
@@ -17,6 +18,19 @@ const ER_OWNER_EDIT_SECRET = 'romero';
 const LISTING_URL_BOOKING =
   'https://www.booking.com/hotel/ar/espaciosa-casa-en-pleno-centro-porteno.es-ar.html';
 const LISTING_URL_AIRBNB = 'https://www.airbnb.com.ar/rooms/1640510292843045372';
+const DEFAULT_CALENDAR_START_ISO = '2026-05-01';
+const CALENDAR_FEEDS = [
+  {
+    name: 'Airbnb',
+    publicUrl: LISTING_URL_AIRBNB,
+    icsUrl: 'https://www.airbnb.com/calendar/ical/1664134541647466368.ics?t=d44ec18463d3431c91a761dc77f81947&locale=es-AR',
+  },
+  {
+    name: 'Booking.com',
+    publicUrl: LISTING_URL_BOOKING,
+    icsUrl: '', // Agregar enlace iCal de Booking aquí
+  },
+];
 
 const DEFAULT_EXTERNAL_REVIEWS = [
   {
@@ -132,18 +146,15 @@ function renderReservationsList(list) {
   const sorted = sortReservations(list).filter(r => isValidRange(r.checkin, r.checkout));
 
   if (sorted.length === 0) {
-    el.innerHTML = '<div class="text-gray-500">Aún no hay reservas registradas.</div>';
+    el.innerHTML = '<div class="text-gray-500">No hay fechas ocupadas sincronizadas para mostrar.</div>';
     return;
   }
 
   el.innerHTML = sorted.slice(0, 10).map(r => {
-    const adults = Number(r.adults || 0);
-    const minors = Number(r.minors || 0);
-    const guests = r.guests ? ` · ${r.guests} huésped${String(r.guests) === '1' ? '' : 'es'}` : '';
-    const breakdown = adults || minors ? ` · ${adults} adulto${adults === 1 ? '' : 's'} · ${minors} menor${minors === 1 ? '' : 'es'}` : '';
+    const source = r.source ? ` · ${escapeHtml(r.source)}` : '';
     return `<div class="flex items-start justify-between gap-3">
-      <div class="text-gray-300">${formatDateEs(r.checkin)} → ${formatDateEs(r.checkout)}${guests}${breakdown}</div>
-      <div class="text-xs text-gray-600">${r.name ? String(r.name).split(' ')[0] : ''}</div>
+      <div class="text-gray-300">${formatDateEs(r.checkin)} → ${formatDateEs(r.checkout)}${source}</div>
+      <div class="text-xs text-gray-600 uppercase tracking-widest">${r.source ? escapeHtml(r.source) : 'Sync'}</div>
     </div>`;
   }).join('');
 }
@@ -234,71 +245,153 @@ async function initializeHeroBackground() {
   document.head.appendChild(style);
 }
 
+function unfoldIcsText(text) {
+  return String(text || '').replace(/\r?\n[ \t]/g, '');
+}
+
+function parseIcsDate(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  const match = raw.match(/^(\d{4})(\d{2})(\d{2})/);
+  if (!match) return '';
+  return `${match[1]}-${match[2]}-${match[3]}`;
+}
+
+function parseIcsReservations(icsText, source) {
+  const unfolded = unfoldIcsText(icsText);
+  const lines = unfolded.split(/\r?\n/);
+  const events = [];
+  let current = null;
+
+  lines.forEach((line) => {
+    if (line === 'BEGIN:VEVENT') {
+      current = {};
+      return;
+    }
+    if (line === 'END:VEVENT') {
+      if (current?.checkin && current?.checkout && isValidRange(current.checkin, current.checkout)) {
+        events.push({
+          id: `${source}-${current.checkin}-${current.checkout}-${events.length}`,
+          source,
+          checkin: current.checkin,
+          checkout: current.checkout,
+        });
+      }
+      current = null;
+      return;
+    }
+    if (!current) return;
+
+    const startMatch = line.match(/^DTSTART[^:]*:(.+)$/);
+    if (startMatch) {
+      current.checkin = parseIcsDate(startMatch[1]);
+      return;
+    }
+    const endMatch = line.match(/^DTEND[^:]*:(.+)$/);
+    if (endMatch) {
+      current.checkout = parseIcsDate(endMatch[1]);
+    }
+  });
+
+  return events;
+}
+
+async function fetchCalendarFeedText(url) {
+  const target = String(url || '').trim();
+  if (!target) return '';
+
+  const attempts = [
+    target,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`,
+    `https://r.jina.ai/http://${target.replace(/^https?:\/\//i, '')}`,
+  ];
+
+  let lastError = null;
+  for (const attempt of attempts) {
+    try {
+      const response = await fetch(attempt, { cache: 'no-store' });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const text = await response.text();
+      if (text && text.includes('BEGIN:VCALENDAR')) return text;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError || new Error('No fue posible leer el calendario externo.');
+}
+
 function initializeBooking() {
-  const ADULT_RATE_USD = 30;
-  const MINOR_RATE_USD = 15;
-  const MAX_GUESTS = 6;
-  const HOST_EMAIL = 'espacioromero.ar@gmail.com';
-  
-  // CONFIGURACIÓN EMAILJS (Completar con tus IDs)
-  const EMAILJS_PUBLIC_KEY = 'DIJitKY8Rmo9SLlOM'; 
-  const EMAILJS_SERVICE_ID = 'service_3ltca0p'; 
-  const EMAILJS_TEMPLATE_ID = 'template_i9libhf'; 
-
-  const bookingForm = document.getElementById('booking-form');
-  const successMsg = document.getElementById('success-msg');
-  const bookingSummary = document.getElementById('booking-summary');
-  const newBookingBtn = document.getElementById('new-booking-btn');
-  const clearReservationsBtn = document.getElementById('clear-reservations-btn');
-  const submitBtn = document.getElementById('booking-submit');
-  if (!bookingForm || !successMsg) return;
-
-  const nameInput = document.getElementById('bk-name');
-  const emailInput = document.getElementById('bk-email');
-  const phoneInput = document.getElementById('bk-phone');
   const checkinInput = document.getElementById('bk-checkin');
   const checkoutInput = document.getElementById('bk-checkout');
-  const adultsInput = document.getElementById('bk-adults');
-  const minorsInput = document.getElementById('bk-minors');
-  const nightsEl = document.getElementById('bk-nights');
-  const checkinLabelEl = document.getElementById('bk-checkin-label');
-  const checkoutLabelEl = document.getElementById('bk-checkout-label');
-  const adultsLabelEl = document.getElementById('bk-adults-label');
-  const minorsLabelEl = document.getElementById('bk-minors-label');
-  const totalUsdEl = document.getElementById('bk-total-usd');
+  const searchBtn = document.getElementById('availability-search-btn');
+  const syncBtn = document.getElementById('calendar-refresh-btn');
+  const syncStatusEl = document.getElementById('calendar-sync-status');
+  const summaryEl = document.getElementById('availability-summary');
+  const sourceListEl = document.getElementById('calendar-source-list');
+  const resultsWrap = document.getElementById('availability-results');
+  if (!checkinInput || !checkoutInput) return;
 
+  const enabledFeeds = CALENDAR_FEEDS.filter(feed => String(feed.icsUrl || '').trim());
+  const pendingFeeds = CALENDAR_FEEDS.filter(feed => !String(feed.icsUrl || '').trim());
+  const calendarFeedSignature = enabledFeeds.map(feed => `${feed.name}:${feed.icsUrl}`).join('|');
   const today = new Date();
   const todayIso = dateToIso(new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate())));
-  if (checkinInput) checkinInput.min = todayIso;
-  if (checkoutInput) checkoutInput.min = todayIso;
+  const defaultStartIso = DEFAULT_CALENDAR_START_ISO;
+  const defaultStartDate = toDateOnly(defaultStartIso);
+  checkinInput.min = defaultStartIso;
+  checkoutInput.min = defaultStartIso;
+
   const calendarContainer = document.getElementById('availability-calendar');
   const calendarWrap = document.getElementById('availability-calendar-wrap');
   const calendarHint = document.getElementById('calendar-hint');
   const calendarMonthLabel = document.getElementById('calendar-month-label');
   const calendarPrevBtn = document.getElementById('calendar-prev');
   const calendarNextBtn = document.getElementById('calendar-next');
-  let calendarMonthDate = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1));
+  let calendarMonthDate = new Date(Date.UTC(2026, 4, 1)); // Mayo 2026
   let calendarMonthShouldAnimate = false;
-
-  // Sincronizar reservas: solo local
-  let reservations = getStoredList(STORAGE_KEYS.reservations);
+  let reservations = [];
   renderReservationsList(reservations);
 
-  function setBookingSubmitEnabled(enabled) {
-    if (!submitBtn) return;
-    if (enabled) {
-      submitBtn.removeAttribute('disabled');
-      submitBtn.classList.remove('opacity-60', 'cursor-not-allowed');
-    } else {
-      submitBtn.setAttribute('disabled', 'true');
-      submitBtn.classList.add('opacity-60', 'cursor-not-allowed');
-    }
+  function setCalendarToFeedStart(list) {
+    // Forzamos siempre a Mayo 2026 al cargar
+    calendarMonthDate = new Date(Date.UTC(2026, 4, 1));
   }
 
-  function isBookedDay(iso, reservations) {
+  if (sourceListEl) {
+    sourceListEl.innerHTML = CALENDAR_FEEDS.map(feed => {
+      const badgeClass = feed.icsUrl ? 'text-green-400 border-green-400/30 bg-green-400/10' : 'text-amber-300 border-amber-300/30 bg-amber-300/10';
+      const statusText = feed.icsUrl ? 'Sincronizado' : 'Pendiente';
+      const linkLabel = feed.name.includes('Booking') ? 'Abrir ficha' : 'Abrir anuncio';
+      return `
+        <div class="flex items-center justify-between gap-3 border border-zinc-800 rounded-xl px-4 py-3 bg-black/30">
+          <div>
+            <div class="text-sm font-semibold text-white">${escapeHtml(feed.name)}</div>
+            <div class="text-xs text-gray-500">${feed.icsUrl ? 'Fechas ocupadas importadas al calendario.' : 'Listo para conectar cuando agregues el enlace iCal.'}</div>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-[10px] uppercase tracking-widest px-2 py-1 rounded-full border ${badgeClass}">${statusText}</span>
+            <a href="${escapeAttr(feed.publicUrl)}" target="_blank" rel="noreferrer" class="text-xs uppercase tracking-widest text-gray-300 hover:text-brand-red transition">${linkLabel}</a>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function setSyncStatus(type, text) {
+    if (!syncStatusEl) return;
+    syncStatusEl.textContent = text;
+    syncStatusEl.classList.remove('text-gray-400', 'text-green-400', 'text-amber-300', 'text-red-400');
+    if (type === 'ok') syncStatusEl.classList.add('text-green-400');
+    else if (type === 'warn') syncStatusEl.classList.add('text-amber-300');
+    else if (type === 'error') syncStatusEl.classList.add('text-red-400');
+    else syncStatusEl.classList.add('text-gray-400');
+  }
+
+  function isBookedDay(iso, currentReservations) {
     const day = toDateOnly(iso);
     if (!day) return false;
-    return reservations.some(r => {
+    return currentReservations.some(r => {
       if (!isValidRange(r.checkin, r.checkout)) return false;
       const s = toDateOnly(r.checkin);
       const e = toDateOnly(r.checkout);
@@ -333,13 +426,11 @@ function initializeBooking() {
   }
 
   function handleCalendarDayClick(iso) {
-    if (!checkinInput || !checkoutInput) return;
-    if (iso < todayIso) return;
-    const list = getStoredList(STORAGE_KEYS.reservations);
-    if (isBookedDay(iso, list)) return;
+    if (iso < defaultStartIso) return;
+    if (isBookedDay(iso, reservations)) return;
 
-    const ci = checkinInput.value || '';
-    const co = checkoutInput.value || '';
+    const ci = checkinInput.value;
+    const co = checkoutInput.value;
 
     if (ci && co) {
       checkinInput.value = iso;
@@ -371,7 +462,6 @@ function initializeBooking() {
 
   function renderAvailabilityCalendar() {
     if (!calendarContainer || !calendarMonthLabel) return;
-    const reservations = getStoredList(STORAGE_KEYS.reservations);
     calendarContainer.innerHTML = '';
 
     const year = calendarMonthDate.getUTCFullYear();
@@ -393,14 +483,14 @@ function initializeBooking() {
       if (!inMonth) {
         const placeholder = document.createElement('div');
         placeholder.className = 'calendar-day is-outside';
-        placeholder.textContent = String(cellDate.getUTCDate());
+        placeholder.textContent = '';
         placeholder.setAttribute('aria-hidden', 'true');
         calendarContainer.appendChild(placeholder);
         continue;
       }
 
       const booked = isBookedDay(iso, reservations);
-      const past = iso < todayIso;
+      const past = iso < defaultStartIso;
       const { inRange, isStart, isEnd } = daySelectionMeta(iso);
 
       const cell = document.createElement('button');
@@ -436,50 +526,11 @@ function initializeBooking() {
     }
   }
 
-  function getGuestBreakdown() {
-    const adults = Number(adultsInput?.value || 1);
-    const minors = Number(minorsInput?.value || 0);
-    const total = adults + minors;
-    return { adults, minors, total };
-  }
-
-  function getNightsCount(checkin, checkout) {
-    if (!isValidRange(checkin, checkout)) return 0;
-    const s = toDateOnly(checkin);
-    const e = toDateOnly(checkout);
-    return s && e ? Math.round((e.getTime() - s.getTime()) / 86400000) : 0;
-  }
-
-  function computeTotalUsd(nights, adults, minors) {
-    return Math.max(0, nights) * ((adults * ADULT_RATE_USD) + (minors * MINOR_RATE_USD));
-  }
-
-  function updateBookingDetails() {
-    if (!nightsEl || !checkinLabelEl || !checkoutLabelEl) return;
-    const checkin = checkinInput?.value || '';
-    const checkout = checkoutInput?.value || '';
-    const { adults, minors } = getGuestBreakdown();
-    if (adultsLabelEl) adultsLabelEl.textContent = String(adults);
-    if (minorsLabelEl) minorsLabelEl.textContent = String(minors);
-
-    if (!checkin || !checkout || !isValidRange(checkin, checkout)) {
-      nightsEl.textContent = '-';
-      checkinLabelEl.textContent = checkin ? formatDateEs(checkin) : '-';
-      checkoutLabelEl.textContent = checkout ? formatDateEs(checkout) : '-';
-      if (totalUsdEl) totalUsdEl.textContent = '-';
+  function syncCheckoutMin() {
+    if (!checkinInput.value) {
+      checkoutInput.min = todayIso;
       return;
     }
-
-    const nights = getNightsCount(checkin, checkout);
-    nightsEl.textContent = String(Math.max(1, nights));
-    checkinLabelEl.textContent = formatDateEs(checkin);
-    checkoutLabelEl.textContent = formatDateEs(checkout);
-    const totalUsd = computeTotalUsd(nights, adults, minors);
-    if (totalUsdEl) totalUsdEl.textContent = `USD ${totalUsd}`;
-  }
-
-  function syncCheckoutMin() {
-    if (!checkinInput?.value || !checkoutInput) return;
     const checkinDate = toDateOnly(checkinInput.value);
     if (!checkinDate) return;
     const minCheckout = new Date(checkinDate.getTime());
@@ -492,249 +543,139 @@ function initializeBooking() {
   }
 
   function updateAvailability() {
-    setBookingError('');
-    const checkin = checkinInput?.value || '';
-    const checkout = checkoutInput?.value || '';
-    const { adults, minors, total } = getGuestBreakdown();
-    if (total > MAX_GUESTS) {
-      setAvailabilityStatus({ type: 'error', text: `Máximo ${MAX_GUESTS} personas por reserva.` });
-      setBookingError(`La suma de adultos y menores no puede superar ${MAX_GUESTS}.`);
-      updateBookingDetails();
-      setBookingSubmitEnabled(false);
-      renderAvailabilityCalendar();
-      return;
-    }
-    if (adults < 1) {
-      setAvailabilityStatus({ type: 'error', text: 'Debe haber al menos 1 adulto.' });
-      setBookingError('Agregá al menos 1 adulto (12+).');
-      updateBookingDetails();
-      setBookingSubmitEnabled(false);
-      renderAvailabilityCalendar();
-      return;
-    }
+    const checkin = checkinInput.value || '';
+    const checkout = checkoutInput.value || '';
     if (calendarHint) {
       if (!checkin) {
-        calendarHint.innerHTML = 'Tocá el día de <strong class="text-white">llegada</strong> y después el de <strong class="text-white">salida</strong>. Los días ocupados no se pueden elegir.';
+        calendarHint.innerHTML = 'Tocá el día de <strong class="text-white">entrada</strong> y después el de <strong class="text-white">salida</strong>. Las fechas ocupadas se bloquean automáticamente.';
       } else if (!checkout) {
-        calendarHint.innerHTML = 'Elegí el día de <strong class="text-white">salida</strong> (debe ser posterior a la llegada).';
+        calendarHint.innerHTML = 'Elegí el día de <strong class="text-white">salida</strong> para terminar la búsqueda.';
       } else {
-        calendarHint.innerHTML = 'Podés tocar otra fecha de <strong class="text-white">llegada</strong> para cambiar el rango.';
+        calendarHint.innerHTML = 'Podés tocar otra fecha de <strong class="text-white">entrada</strong> para cambiar el rango.';
       }
     }
     if (!checkin || !checkout) {
-      setAvailabilityStatus({ type: 'info', text: 'Seleccioná fechas para ver disponibilidad.' });
-      updateBookingDetails();
-      setBookingSubmitEnabled(false);
+      setAvailabilityStatus({ type: 'info', text: 'Seleccioná fechas para consultar disponibilidad.' });
+      if (summaryEl) summaryEl.textContent = 'Elegí una fecha de entrada y otra de salida para verificar si el rango aparece libre en el calendario sincronizado.';
       renderAvailabilityCalendar();
       return;
     }
     if (!isValidRange(checkin, checkout)) {
       setAvailabilityStatus({ type: 'error', text: 'La fecha de salida debe ser posterior a la llegada.' });
-      updateBookingDetails();
-      setBookingSubmitEnabled(false);
+      if (summaryEl) summaryEl.textContent = 'Revisá las fechas: la salida tiene que ser posterior a la entrada.';
       renderAvailabilityCalendar();
       return;
     }
-    const current = getStoredList(STORAGE_KEYS.reservations);
-    const conflict = getReservationConflict(current, checkin, checkout);
+    const conflict = getReservationConflict(reservations, checkin, checkout);
     if (conflict) {
-      setAvailabilityStatus({ type: 'error', text: 'No disponible en esas fechas. Elegí otras fechas.' });
-      updateBookingDetails();
-      setBookingSubmitEnabled(false);
+      setAvailabilityStatus({ type: 'error', text: 'No disponible en esas fechas.' });
+      if (summaryEl) {
+        summaryEl.textContent = `El rango ${formatDateEs(checkin)} a ${formatDateEs(checkout)} aparece ocupado en ${conflict.source || 'el calendario sincronizado'}.`;
+      }
       renderAvailabilityCalendar();
       return;
     }
-    setAvailabilityStatus({ type: 'ok', text: 'Disponible. Podés confirmar la reserva.' });
-    updateBookingDetails();
-    setBookingSubmitEnabled(true);
+    setAvailabilityStatus({ type: 'ok', text: 'Disponible en el calendario sincronizado.' });
+    if (summaryEl) {
+      summaryEl.textContent = `El rango ${formatDateEs(checkin)} a ${formatDateEs(checkout)} figura libre en la sincronización actual. Verificá y completá la reserva en Airbnb o Booking.com.`;
+    }
     renderAvailabilityCalendar();
   }
 
-  checkinInput?.addEventListener('change', () => {
+  async function syncExternalCalendars() {
+    if (enabledFeeds.length === 0) {
+      reservations = [];
+      renderReservationsList(reservations);
+      renderAvailabilityCalendar();
+      updateAvailability();
+      setSyncStatus('warn', 'No hay calendarios iCal configurados todavía. El calendario muestra disponibilidad general.');
+      return;
+    }
+
+    if (syncBtn) {
+      syncBtn.setAttribute('disabled', 'true');
+      syncBtn.classList.add('opacity-70');
+      syncBtn.innerHTML = 'Sincronizando <i class="fas fa-circle-notch fa-spin"></i>';
+    }
+
+    setSyncStatus('info', 'Actualizando disponibilidad desde los calendarios externos...');
+
+    try {
+      const fetchedLists = await Promise.all(
+        enabledFeeds.map(async (feed) => {
+          const text = await fetchCalendarFeedText(feed.icsUrl);
+          return parseIcsReservations(text, feed.name);
+        })
+      );
+
+      reservations = fetchedLists
+        .flat()
+        .filter(item => item && isValidRange(item.checkin, item.checkout))
+        .sort((a, b) => (a.checkin || '').localeCompare(b.checkin || ''));
+
+      setCalendarToFeedStart(reservations);
+
+      localStorage.setItem(
+        STORAGE_KEYS.calendarCache,
+        JSON.stringify({
+          feedSignature: calendarFeedSignature,
+          syncedAt: new Date().toISOString(),
+          reservations,
+        })
+      );
+
+      renderReservationsList(reservations);
+      renderAvailabilityCalendar();
+      updateAvailability();
+
+      const syncedNames = enabledFeeds.map(feed => feed.name).join(', ');
+      if (pendingFeeds.length > 0) {
+        setSyncStatus('warn', `Calendario actualizado desde ${syncedNames}. Pendiente conectar: ${pendingFeeds.map(feed => feed.name).join(', ')}.`);
+      } else {
+        setSyncStatus('ok', `Calendario actualizado desde ${syncedNames}.`);
+      }
+    } catch (error) {
+      const cached = safeJsonParse(localStorage.getItem(STORAGE_KEYS.calendarCache), { reservations: [] });
+      const cachedMatchesFeed = cached?.feedSignature === calendarFeedSignature;
+      reservations = cachedMatchesFeed && Array.isArray(cached.reservations) ? cached.reservations : [];
+      renderReservationsList(reservations);
+      renderAvailabilityCalendar();
+      updateAvailability();
+      if (reservations.length > 0) {
+        setSyncStatus('warn', 'No se pudo refrescar el calendario en este momento. Se muestran las últimas fechas sincronizadas guardadas en este navegador.');
+      } else {
+        setSyncStatus('error', 'No se pudo cargar la disponibilidad externa. Revisá el enlace iCal o intentá nuevamente.');
+      }
+      console.error('Calendar sync error:', error);
+    } finally {
+      if (syncBtn) {
+        syncBtn.removeAttribute('disabled');
+        syncBtn.classList.remove('opacity-70');
+        syncBtn.innerHTML = 'Actualizar calendario';
+      }
+    }
+  }
+
+  checkinInput.addEventListener('change', () => {
     syncCheckoutMin();
     updateAvailability();
   });
-  checkoutInput?.addEventListener('change', updateAvailability);
-  adultsInput?.addEventListener('change', updateAvailability);
-  minorsInput?.addEventListener('change', updateAvailability);
+  checkoutInput.addEventListener('change', updateAvailability);
+  searchBtn?.addEventListener('click', updateAvailability);
+  syncBtn?.addEventListener('click', syncExternalCalendars);
 
-  bookingForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    setBookingError('');
-    setBookingSubmitEnabled(false);
-    if (submitBtn) {
-      submitBtn.classList.add('opacity-80');
-      submitBtn.innerHTML = 'Confirmando <i class="fas fa-circle-notch fa-spin"></i>';
-    }
-    const checkin = checkinInput?.value || '';
-    const checkout = checkoutInput?.value || '';
-    const { adults, minors, total } = getGuestBreakdown();
-    if (total > MAX_GUESTS) {
-      setBookingError(`La suma de adultos y menores no puede superar ${MAX_GUESTS}.`);
-      setAvailabilityStatus({ type: 'error', text: `Máximo ${MAX_GUESTS} personas por reserva.` });
-      if (submitBtn) {
-        submitBtn.classList.remove('opacity-80');
-        submitBtn.innerHTML = 'CONFIRMAR RESERVA';
-      }
-      updateAvailability();
-      return;
-    }
-    if (adults < 1) {
-      setBookingError('Agregá al menos 1 adulto (12+).');
-      setAvailabilityStatus({ type: 'error', text: 'Debe haber al menos 1 adulto.' });
-      if (submitBtn) {
-        submitBtn.classList.remove('opacity-80');
-        submitBtn.innerHTML = 'CONFIRMAR RESERVA';
-      }
-      updateAvailability();
-      return;
-    }
-    if (!isValidRange(checkin, checkout)) {
-      setBookingError('Revisá las fechas: la salida debe ser posterior a la llegada.');
-      setAvailabilityStatus({ type: 'error', text: 'Fechas inválidas.' });
-      if (submitBtn) {
-        submitBtn.classList.remove('opacity-80');
-        submitBtn.innerHTML = 'CONFIRMAR RESERVA';
-      }
-      updateAvailability();
-      return;
-    }
-
-    const current = getStoredList(STORAGE_KEYS.reservations);
-    const conflict = getReservationConflict(current, checkin, checkout);
-    if (conflict) {
-      setBookingError('Esas fechas ya están reservadas. Elegí otras fechas.');
-      setAvailabilityStatus({ type: 'error', text: 'No disponible.' });
-      if (submitBtn) {
-        submitBtn.classList.remove('opacity-80');
-        submitBtn.innerHTML = 'CONFIRMAR RESERVA';
-      }
-      updateAvailability();
-      return;
-    }
-
-    const nights = getNightsCount(checkin, checkout);
-    const totalUsd = computeTotalUsd(nights, adults, minors);
-    const reservation = {
-      id: crypto?.randomUUID ? crypto.randomUUID() : String(Date.now()),
-      name: String(nameInput?.value || '').trim(),
-      email: String(emailInput?.value || '').trim(),
-      phone: String(phoneInput?.value || '').trim(),
-      checkin,
-      checkout,
-      adults,
-      minors,
-      guests: total,
-      totalUsd,
-      createdAt: new Date().toISOString(),
-    };
-
-    // Enviar email vía EmailJS (Notifica a dueño y huésped)
-    const sendEmail = async (res) => {
-      if (typeof emailjs === 'undefined' || EMAILJS_PUBLIC_KEY === 'TU_PUBLIC_KEY' || !EMAILJS_PUBLIC_KEY) {
-        console.warn('EmailJS no configurado o sin llave pública. El mail no se envió.');
-        return true; 
-      }
-
-      try {
-        emailjs.init(EMAILJS_PUBLIC_KEY);
-        const templateParams = {
-          to_name: res.name,
-          to_email: res.email,
-          from_name: 'Espacio Romero',
-          host_email: HOST_EMAIL,
-          llegada: formatDateEs(res.checkin),
-          salida: formatDateEs(res.checkout),
-          adultos: res.adults,
-          menores: res.minors,
-          total_usd: `USD ${res.totalUsd}`,
-          phone: res.phone || 'No especificado',
-          fecha_registro: new Date(res.createdAt).toLocaleString('es-AR')
-        };
-
-        const response = await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams);
-        return response.status === 200;
-      } catch (e) {
-        console.error('Error sending email with EmailJS:', e);
-        return false;
-      }
-    };
-
-    // Solo enviamos el email y guardamos localmente
-    sendEmail(reservation).then(() => {
-      const next = [reservation, ...getStoredList(STORAGE_KEYS.reservations)].slice(0, 100);
-      setStoredList(STORAGE_KEYS.reservations, next);
-      renderReservationsList(next);
-
-      if (bookingSummary) {
-        const phoneText = reservation.phone ? ` · ${reservation.phone}` : '';
-        const safeName = escapeHtml(reservation.name);
-        const safePhone = escapeHtml(phoneText);
-        bookingSummary.innerHTML = `
-          <div class="bg-zinc-900/50 p-4 rounded-lg border border-green-500/30 mb-4">
-            <p class="text-white font-semibold mb-2">Detalles de tu reserva:</p>
-            <p class="text-gray-300">${safeName} · ${formatDateEs(checkin)} → ${formatDateEs(checkout)}</p>
-            <p class="text-gray-300">${reservation.adults} adulto${reservation.adults === 1 ? '' : 's'} · ${reservation.minors} menor${reservation.minors === 1 ? '' : 'es'}${safePhone}</p>
-            <p class="text-white mt-2">Tarifa estimada: <strong class="text-green-400">USD ${reservation.totalUsd}</strong></p>
-            <p class="text-xs text-gray-500 mt-2 italic">Se ha enviado un correo de notificación a la administración.</p>
-          </div>
-        `;
-      }
-
-      bookingForm.classList.add('hidden');
-      successMsg.classList.remove('hidden');
-      setAvailabilityStatus({ type: 'ok', text: 'Reserva confirmada.' });
-
-      if (submitBtn) {
-        submitBtn.classList.remove('opacity-80');
-        submitBtn.innerHTML = 'CONFIRMAR RESERVA';
-      }
-      updateAvailability();
-    }).catch(err => {
-      console.error('Booking final steps error:', err);
-      setBookingError('Hubo un problema al procesar la reserva. Por favor contactanos por WhatsApp.');
-      if (submitBtn) {
-        submitBtn.classList.remove('opacity-80');
-        submitBtn.innerHTML = 'REINTENTAR';
-        setBookingSubmitEnabled(true);
-      }
-    });
-  });
-
-  newBookingBtn?.addEventListener('click', () => {
-    bookingForm.reset();
-    setBookingError('');
-    setAvailabilityStatus({ type: 'info', text: 'Seleccioná fechas para ver disponibilidad.' });
-    successMsg.classList.add('hidden');
-    bookingForm.classList.remove('hidden');
-    if (checkoutInput) checkoutInput.min = todayIso;
-    const ratingInput = document.getElementById('rev-rating');
-    if (ratingInput) ratingInput.value = 5;
-    const label = document.getElementById('rating-label');
-    if (label) label.textContent = '5/5';
-    updateAvailability();
-  });
-
-  const isOwner = isOwnerEditSession();
-  const reservationsContainer = document.getElementById('reservations-list')?.closest('.mt-12.border-t');
-  
-  if (!isOwner) {
-    if (clearReservationsBtn) clearReservationsBtn.classList.add('hidden');
-    if (reservationsContainer) reservationsContainer.classList.add('hidden');
+  if (resultsWrap) {
+    resultsWrap.classList.remove('hidden');
   }
 
-  clearReservationsBtn?.addEventListener('click', () => {
-    if (!isOwnerEditSession()) return;
-    const ok = confirm('¿Seguro que querés limpiar todas las reservas locales?');
-    if (!ok) return;
-    setStoredList(STORAGE_KEYS.reservations, []);
-    renderReservationsList([]);
-    updateAvailability();
-  });
-
   calendarPrevBtn?.addEventListener('click', () => {
+    const minMonthDate = new Date(Date.UTC(defaultStartDate.getUTCFullYear(), defaultStartDate.getUTCMonth(), 1));
+
+    const targetDate = new Date(Date.UTC(calendarMonthDate.getUTCFullYear(), calendarMonthDate.getUTCMonth() - 1, 1));
+    if (targetDate < minMonthDate) return;
+
     calendarMonthShouldAnimate = true;
-    calendarMonthDate = new Date(Date.UTC(calendarMonthDate.getUTCFullYear(), calendarMonthDate.getUTCMonth() - 1, 1));
+    calendarMonthDate = targetDate;
     renderAvailabilityCalendar();
   });
   calendarNextBtn?.addEventListener('click', () => {
@@ -743,7 +684,35 @@ function initializeBooking() {
     renderAvailabilityCalendar();
   });
 
+  const cached = safeJsonParse(localStorage.getItem(STORAGE_KEYS.calendarCache), { reservations: [] });
+  const cachedMatchesFeed = cached?.feedSignature === calendarFeedSignature;
+  if (!cachedMatchesFeed && localStorage.getItem(STORAGE_KEYS.calendarCache)) {
+    localStorage.removeItem(STORAGE_KEYS.calendarCache);
+  }
+  if (cachedMatchesFeed && Array.isArray(cached.reservations) && cached.reservations.length > 0) {
+    reservations = cached.reservations;
+    setCalendarToFeedStart(reservations);
+    renderReservationsList(reservations);
+    setSyncStatus('warn', 'Mostrando la última sincronización guardada mientras se actualiza el calendario.');
+  } else if (pendingFeeds.length > 0) {
+    setSyncStatus('warn', `Calendario listo. Pendiente conectar: ${pendingFeeds.map(feed => feed.name).join(', ')}.`);
+  } else {
+    setSyncStatus('info', 'Calendario listo para sincronizar.');
+  }
+
+  renderAvailabilityCalendar();
+  syncCheckoutMin();
+  if (!checkinInput.value && defaultStartIso >= todayIso) {
+    checkinInput.value = defaultStartIso;
+    syncCheckoutMin();
+  }
+  if (summaryEl) {
+    summaryEl.textContent = enabledFeeds.length > 0
+      ? 'Consultá un rango para ver si aparece libre según el calendario sincronizado. Luego podés continuar la reserva en las plataformas oficiales.'
+      : 'El calendario está preparado, pero todavía necesita al menos un enlace iCal para mostrar disponibilidad real.';
+  }
   updateAvailability();
+  syncExternalCalendars();
 }
 
 function setReviewError(text) {
@@ -772,6 +741,103 @@ function escapeHtml(value) {
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#39;');
 }
+
+async function uploadToSupabase(file) {
+  const url = localStorage.getItem('er_supabase_url') || '';
+  const key = localStorage.getItem('er_supabase_key') || '';
+  const bucket = localStorage.getItem('er_supabase_bucket') || 'images';
+
+  if (!url || !key) {
+    const newUrl = window.prompt('Para usar Supabase, ingresá la URL de tu proyecto:', url);
+    const newKey = window.prompt('Ingresá tu Anon Key de Supabase:', key);
+    if (newUrl && newKey) {
+      localStorage.setItem('er_supabase_url', newUrl);
+      localStorage.setItem('er_supabase_key', newKey);
+      localStorage.setItem('er_supabase_bucket', bucket);
+    } else {
+      throw new Error('Configuración de Supabase incompleta.');
+    }
+  }
+
+  const sUrl = localStorage.getItem('er_supabase_url').replace(/\/$/, '');
+  const sKey = localStorage.getItem('er_supabase_key');
+  const sBucket = localStorage.getItem('er_supabase_bucket');
+  const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+  const filePath = `${sBucket}/${fileName}`;
+
+  const res = await fetch(`${sUrl}/storage/v1/object/${filePath}`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${sKey}`,
+      'apikey': sKey,
+      'Content-Type': file.type
+    },
+    body: file
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Error al subir a Supabase');
+
+  return `${sUrl}/storage/v1/object/public/${filePath}`;
+}
+
+async function saveJsonToSupabase(fileName, content) {
+  const sUrl = (localStorage.getItem('er_supabase_url') || '').replace(/\/$/, '');
+  const sKey = localStorage.getItem('er_supabase_key');
+  const sBucket = localStorage.getItem('er_supabase_bucket');
+  
+  if (!sUrl || !sKey) {
+    throw new Error('Faltan configurar las credenciales de Supabase (URL o Key).');
+  }
+
+  const blob = new Blob([JSON.stringify(content, null, 2)], { type: 'application/json' });
+  const filePath = `${sBucket}/${fileName}`;
+
+  // Subir con x-upsert para sobrescribir el anterior
+  try {
+    const res = await fetch(`${sUrl}/storage/v1/object/${filePath}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${sKey}`,
+        'apikey': sKey,
+        'Content-Type': 'application/json',
+        'x-upsert': 'true'
+      },
+      body: blob
+    });
+    if (!res.ok) {
+      const txt = await res.text();
+      if (txt.includes('row-level security policy')) {
+        throw new Error('Error de Seguridad (RLS): El bucket de Supabase no permite sobrescribir archivos. Debes habilitar las políticas de INSERT y UPDATE para usuarios anónimos en el panel de Supabase.');
+      }
+      throw new Error(`Supabase Error: ${res.status} ${txt}`);
+    }
+  } catch (err) {
+    console.error(`Error saving ${fileName} to Supabase:`, err);
+    throw err;
+  }
+}
+
+async function loadJsonFromSupabase(fileName) {
+  const sUrl = (localStorage.getItem('er_supabase_url') || '').replace(/\/$/, '');
+  const sBucket = localStorage.getItem('er_supabase_bucket');
+  if (!sUrl || !sBucket) return null;
+
+  try {
+    // Agregamos un timestamp para evitar cache del navegador y ver cambios al instante
+    const res = await fetch(`${sUrl}/storage/v1/object/public/${sBucket}/${fileName}?t=${Date.now()}`, { 
+      cache: 'no-store',
+      headers: { 'pragma': 'no-cache', 'cache-control': 'no-cache' }
+    });
+    if (res.ok) return await res.json();
+  } catch (e) {
+    console.warn(`No se pudo cargar ${fileName} de Supabase, usando local/fallback.`);
+  }
+  return null;
+}
+
+window.saveJsonToSupabase = saveJsonToSupabase;
+window.loadJsonFromSupabase = loadJsonFromSupabase;
 
 function sanitizeLink(value) {
   const text = String(value || '').trim();
@@ -1096,23 +1162,24 @@ function escapeAttr(s) {
     .replace(/\r?\n/g, ' ');
 }
 
-function buildProductCardEl(p) {
+function buildProductCardEl(p, index = 0) {
   const div = document.createElement('div');
-  div.className = 'bg-black border border-zinc-800 overflow-hidden group reveal is-visible';
+  div.className = 'product-card-glass overflow-hidden group store-item-enter';
+  div.style.setProperty('--stagger', index);
   div.innerHTML = `
-    <div class="relative">
-      <img src="${escapeAttr(p.image)}" data-fallback="foto1.jpeg" alt="${escapeAttr(p.title)}" class="w-full h-56 object-cover group-hover:scale-105 transition duration-500">
-      <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
-        <button type="button" class="bg-brand-red text-white px-6 py-2 font-bold product-detail-btn"
+    <div class="relative overflow-hidden">
+      <img src="${escapeAttr(p.image)}" data-fallback="foto1.jpeg" alt="${escapeAttr(p.title)}" class="w-full h-56 object-cover group-hover:scale-110 transition duration-700">
+      <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition duration-500 flex items-center justify-center">
+        <button type="button" class="bg-brand-red text-white px-8 py-3 font-bold product-detail-btn shadow-xl hover:bg-brand-dark-red"
           data-title="${escapeAttr(p.title)}"
           data-price="${escapeAttr(p.price)}"
           data-img="${escapeAttr(p.image)}"
           data-desc="${escapeAttr(p.desc)}">${escapeHtml(p.btnLabel)}</button>
       </div>
     </div>
-    <div class="p-4">
-      <h2 class="font-bold text-lg">${escapeHtml(p.title)}</h2>
-      <p class="text-white/80 text-sm">${escapeHtml(p.subtitle)}</p>
+    <div class="p-5">
+      <h2 class="font-bold text-xl mb-1">${escapeHtml(p.title)}</h2>
+      <p class="text-white/60 text-sm italic">${escapeHtml(p.subtitle)}</p>
     </div>
   `;
   return div;
@@ -1133,24 +1200,58 @@ function renderStoreProductGrid(grid) {
   if (!st) return;
   const products = st.products || [];
   const sections = [...(st.sections || [])].sort((a, b) => a.order - b.order);
+  
+  const hash = window.location.hash;
+  const activeSectionId = hash.startsWith('#tienda-') ? hash.replace('#tienda-', '') : (sections[0]?.id || null);
+  
   grid.innerHTML = '';
-  sections.forEach(sec => {
+
+  // 1. Renderizar Barra de Navegación de la Tienda (Tabs)
+  if (sections.length > 1) {
+    const nav = document.createElement('div');
+    nav.className = 'flex flex-wrap justify-center gap-4 mb-16 border-b border-zinc-800 pb-8 reveal';
+    nav.innerHTML = sections.map(sec => `
+      <a href="#tienda-${sec.id}" class="px-6 py-3 rounded-full border-2 transition-all duration-300 uppercase tracking-widest text-xs font-bold ${activeSectionId === sec.id ? 'bg-brand-red border-brand-red text-white shadow-lg shadow-brand-red/30 scale-110' : 'border-zinc-700 text-gray-400 hover:border-white hover:text-white'}">
+        ${escapeHtml(sec.name)}
+      </a>
+    `).join('');
+    grid.appendChild(nav);
+  }
+  
+  const sectionsToShow = activeSectionId 
+    ? sections.filter(s => s.id === activeSectionId) 
+    : [sections[0]].filter(Boolean);
+
+  let globalIdx = 0;
+  sectionsToShow.forEach(sec => {
     const secProds = products.filter(p => p.sectionId === sec.id);
-    if (secProds.length === 0) return;
     const wrap = document.createElement('section');
     wrap.id = `tienda-${sec.id}`;
-    wrap.className = 'store-section';
+    wrap.className = 'store-section reveal animate-fade-in';
+    
     const h = document.createElement('h2');
-    h.className = 'text-2xl font-serif font-bold tracking-widest text-brand-red/90 mb-6 mt-10 first:mt-0 border-b border-zinc-800 pb-2';
+    h.className = 'store-section-title text-3xl font-serif font-bold tracking-widest text-brand-red mb-10 pb-4 text-center';
     h.textContent = sec.name;
     wrap.appendChild(h);
+
     const subGrid = document.createElement('div');
-    subGrid.className = 'grid sm:grid-cols-2 lg:grid-cols-4 gap-6';
-    secProds.forEach(p => subGrid.appendChild(buildProductCardEl(p)));
+    subGrid.className = 'grid sm:grid-cols-2 lg:grid-cols-4 gap-8';
+    
+    if (secProds.length > 0) {
+      secProds.forEach(p => {
+        subGrid.appendChild(buildProductCardEl(p, globalIdx));
+        globalIdx++;
+      });
+    } else {
+      subGrid.innerHTML = '<div class="col-span-full text-gray-600 italic py-12 border border-dashed border-zinc-800 rounded-lg text-center">Esta sección todavía no tiene productos.</div>';
+    }
+    
     wrap.appendChild(subGrid);
     grid.appendChild(wrap);
   });
+  
   initializeImageFallbacks();
+  initializeReveal(); // Re-inicializar para las nuevas secciones
 }
 
 function renderCatalogoPage(root) {
@@ -1160,21 +1261,32 @@ function renderCatalogoPage(root) {
   const products = st.products || [];
   const sections = [...(st.sections || [])].sort((a, b) => a.order - b.order);
   root.innerHTML = '';
+  
+  let globalIdx = 0;
   sections.forEach(sec => {
     const secProds = products.filter(p => p.sectionId === sec.id);
-    if (secProds.length === 0) return;
     const wrap = document.createElement('section');
     wrap.className = 'catalogo-section mb-16 md:mb-24';
     const head = document.createElement('div');
-    head.className = 'flex flex-wrap items-baseline gap-4 mb-8';
+    head.className = 'flex flex-wrap items-baseline gap-4 mb-8 store-section-title pb-4';
     head.innerHTML = `
       <h2 class="text-3xl md:text-4xl font-serif font-bold text-white">${escapeHtml(sec.name)}</h2>
       <span class="text-sm text-gray-500 uppercase tracking-widest">${secProds.length} ${secProds.length === 1 ? 'pieza' : 'piezas'}</span>
     `;
     wrap.appendChild(head);
+
     const subGrid = document.createElement('div');
     subGrid.className = 'grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8';
-    secProds.forEach(p => subGrid.appendChild(buildProductCardEl(p)));
+    
+    if (secProds.length > 0) {
+      secProds.forEach(p => {
+        subGrid.appendChild(buildProductCardEl(p, globalIdx));
+        globalIdx++;
+      });
+    } else {
+      subGrid.innerHTML = '<div class="col-span-full text-gray-600 italic py-12 border border-dashed border-zinc-800 rounded-lg text-center">Todavía no hay obras en esta categoría.</div>';
+    }
+    
     wrap.appendChild(subGrid);
     root.appendChild(wrap);
   });
@@ -1204,10 +1316,56 @@ function persistTiendaHeader(titulo, subtitulo) {
   if (p) p.textContent = subtitulo;
 }
 
+function renderDynamicNavMenu() {
+  const st = window.getStoreState?.();
+  if (!st || !st.sections) return;
+
+  const sections = [...st.sections].sort((a, b) => a.order - b.order);
+  
+  // 1. Dropdown Desktop
+  const desktopContainer = document.querySelector('.nav-dropdown > div');
+  if (desktopContainer) {
+    const sectionHtml = sections.map(sec => `
+      <a href="./tienda.html#tienda-${sec.id}" class="block text-xs uppercase tracking-widest text-gray-200 hover:bg-brand-red/10 hover:text-brand-red">${escapeHtml(sec.name)}</a>
+    `).join('');
+    
+    desktopContainer.innerHTML = `
+      ${sectionHtml}
+      <a href="./catalogo.html" class="block text-xs uppercase tracking-widest text-gray-200 hover:bg-brand-red/10 hover:text-brand-red border-t border-zinc-800">Catálogo completo</a>
+    `;
+  }
+
+  // 2. Mobile Menu
+  const mobileContainer = document.querySelector('#mobile-menu .pl-4');
+  if (mobileContainer) {
+    const sectionHtml = sections.map(sec => `
+      <a href="./tienda.html#tienda-${sec.id}" class="hover:text-white transition">${escapeHtml(sec.name)}</a>
+    `).join('');
+    
+    mobileContainer.innerHTML = `
+      ${sectionHtml}
+      <a href="./catalogo.html" class="hover:text-white transition">Catálogo completo</a>
+    `;
+  }
+}
+
 function initializeTiendaStorePage() {
-  if (!document.getElementById('store-grid')) return;
-  syncTiendaFromState();
-  document.addEventListener('er-store-update', () => syncTiendaFromState());
+  const grid = document.getElementById('store-grid');
+  if (!grid && !document.querySelector('.nav-dropdown')) return;
+  
+  const updateAll = () => {
+    syncTiendaFromState();
+    renderDynamicNavMenu();
+  };
+
+  updateAll();
+  document.addEventListener('er-store-update', updateAll);
+  
+  // Escuchar cambios en el hash para filtrar secciones sin recargar
+  window.addEventListener('hashchange', () => {
+    if (grid) renderStoreProductGrid(grid);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
 }
 
 function initializeCatalogoPage() {
@@ -1336,7 +1494,11 @@ function openTiendaStoreAdmin() {
         </div>
         <div>
           <label class="block text-lg font-semibold text-gray-200 mb-1">Foto (archivo o enlace)</label>
-          <input type="text" class="er-inp-img w-full text-xl p-4 bg-black border-2 border-zinc-600 rounded-lg text-white" value="${escapeAttr(prod.image)}" placeholder="foto1.jpeg">
+          <div class="flex gap-2">
+            <input type="text" class="er-inp-img w-full text-xl p-4 bg-black border-2 border-zinc-600 rounded-lg text-white" value="${escapeAttr(prod.image)}" placeholder="foto1.jpeg">
+            <button type="button" class="er-btn-upload bg-zinc-700 hover:bg-zinc-600 text-white px-4 rounded-lg text-sm shrink-0 flex items-center gap-2"><i class="fas fa-cloud-upload-alt"></i> Subir</button>
+          </div>
+          <p class="text-xs text-gray-500 mt-1">Podés poner el nombre del archivo (si está en GitHub) o un enlace de internet (Supabase, Cloudinary, etc.)</p>
         </div>
         <div>
           <label class="block text-lg font-semibold text-gray-200 mb-1">Texto del botón</label>
@@ -1352,15 +1514,25 @@ function openTiendaStoreAdmin() {
       .join('');
 
     overlay.innerHTML = `
-      <div class="max-w-3xl mx-auto my-4 bg-zinc-900 border-2 border-zinc-500 rounded-xl p-6 md:p-8">
+      <div class="max-w-3xl w-full my-8 bg-zinc-900 border-2 border-zinc-500 rounded-xl p-6 md:p-8 relative shadow-2xl">
+        <button type="button" id="er-tienda-close-x" class="er-modal-close-x">&times;</button>
         <h2 class="text-3xl font-serif font-bold text-white mb-2">Gestionar la tienda</h2>
         <div class="bg-amber-900/20 border border-amber-700/50 p-4 rounded-lg mb-6">
           <p class="text-amber-200 text-sm leading-relaxed italic">
-            <strong>Instrucciones para los dueños:</strong><br>
-            1. Editá lo que quieras abajo.<br>
-            2. Tocá el botón verde <strong>Guardar Cambios Localmente</strong>.<br>
-            3. Tocá el botón azul <strong>Descargar Archivo para GitHub</strong>.<br>
-            4. Subí el archivo descargado (store.json) a la carpeta <strong>data/</strong> de tu GitHub para que todos vean los cambios.
+            <strong>Configuración de Supabase:</strong><br>
+            Para subir fotos sin usar GitHub, necesitás la URL y Anon Key de tu proyecto. Las fotos se guardarán en el bucket que elijas (ej: 'images'). <strong>Importante: el bucket debe estar configurado como PUBLIC en Supabase.</strong>
+          </p>
+          <div class="mt-3 grid grid-cols-1 md:grid-cols-3 gap-2">
+            <button type="button" id="er-setup-supabase-tienda" class="text-xs bg-amber-700 hover:bg-amber-600 text-white px-3 py-2 rounded">Configurar Supabase</button>
+            <span id="er-supabase-status-tienda" class="text-[10px] text-amber-300 flex items-center"></span>
+          </div>
+        </div>
+        <div class="bg-amber-900/20 border border-amber-700/50 p-4 rounded-lg mb-6">
+          <p class="text-amber-200 text-sm leading-relaxed italic">
+            <strong>Instrucciones:</strong><br>
+            1. Editá los productos, precios y fotos.<br>
+            2. Tocá <strong>Guardar Cambios en la Nube</strong> para sincronizar todo.<br>
+            3. (Opcional) Descargá el archivo si querés tener un respaldo en GitHub.
           </p>
         </div>
         <div class="space-y-4 mb-6">
@@ -1381,8 +1553,8 @@ function openTiendaStoreAdmin() {
         <button type="button" id="er-tienda-add" class="w-full py-4 text-xl font-bold rounded-lg border-2 border-dashed border-zinc-500 text-gray-200 hover:border-brand-red hover:text-white mb-8">+ Agregar producto</button>
         
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <button type="button" id="er-tienda-save" class="w-full py-6 text-xl font-bold rounded-lg bg-green-700 hover:bg-green-600 text-white">1. Guardar Cambios</button>
-          <button type="button" id="er-tienda-export" class="w-full py-6 text-xl font-bold rounded-lg bg-blue-700 hover:bg-blue-600 text-white">2. Descargar para GitHub</button>
+          <button type="button" id="er-tienda-save" class="w-full py-6 text-xl font-bold rounded-lg bg-green-700 hover:bg-green-600 text-white">Sincronizar en la Nube</button>
+          <button type="button" id="er-tienda-export" class="w-full py-6 text-xl font-bold rounded-lg bg-blue-700 hover:bg-blue-600 text-white">Descargar Respaldo (JSON)</button>
         </div>
         
         <button type="button" id="er-tienda-reset-store" class="w-full py-3 text-lg rounded-lg border border-amber-600 text-amber-200 mt-8 mb-4">Volver a datos originales</button>
@@ -1395,6 +1567,60 @@ function openTiendaStoreAdmin() {
     overlay.querySelectorAll('.er-prod').forEach((block, i) => {
       const ta = block.querySelector('.er-inp-desc');
       if (ta) ta.value = products[i]?.desc ?? '';
+    });
+
+    const updateSupabaseStatus = (btnId, statusId) => {
+      const sUrl = localStorage.getItem('er_supabase_url');
+      const sStatus = overlay.querySelector(`#${statusId}`);
+      if (sUrl && sStatus) {
+        sStatus.innerHTML = `<i class="fas fa-check-circle text-green-400 mr-1"></i> Conectado: ${new URL(sUrl).hostname}`;
+      } else if (sStatus) {
+        sStatus.innerHTML = '<i class="fas fa-exclamation-circle text-amber-400 mr-1"></i> No configurado';
+      }
+    };
+
+    updateSupabaseStatus('er-setup-supabase-tienda', 'er-supabase-status-tienda');
+
+    overlay.querySelector('#er-setup-supabase-tienda')?.addEventListener('click', () => {
+      const url = window.prompt('URL de Supabase (ej: https://xyz.supabase.co):', localStorage.getItem('er_supabase_url') || '');
+      const key = window.prompt('Anon Key de Supabase:', localStorage.getItem('er_supabase_key') || '');
+      const bucket = window.prompt('Nombre del Bucket (ej: images):', localStorage.getItem('er_supabase_bucket') || 'images');
+      if (url && key) {
+        localStorage.setItem('er_supabase_url', url);
+        localStorage.setItem('er_supabase_key', key);
+        localStorage.setItem('er_supabase_bucket', bucket || 'images');
+        updateSupabaseStatus('er-setup-supabase-tienda', 'er-supabase-status-tienda');
+      }
+    });
+
+    overlay.querySelectorAll('.er-btn-upload').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const input = btn.parentElement?.querySelector('input');
+        if (!input) return;
+
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = 'image/*';
+        fileInput.onchange = async () => {
+          const file = fileInput.files?.[0];
+          if (!file) return;
+
+          btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Subiendo...';
+          btn.disabled = true;
+
+          try {
+            const publicUrl = await uploadToSupabase(file);
+            input.value = publicUrl;
+            window.alert('¡Foto subida con éxito a Supabase! La URL se ha copiado al campo.');
+          } catch (err) {
+            window.alert('Error al subir: ' + err.message);
+          } finally {
+            btn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Subir';
+            btn.disabled = false;
+          }
+        };
+        fileInput.click();
+      });
     });
 
     overlay.querySelector('#er-tienda-export')?.addEventListener('click', () => {
@@ -1418,13 +1644,27 @@ function openTiendaStoreAdmin() {
         sections,
         products,
       });
+
+      const btn = overlay.querySelector('#er-tienda-save');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sincronizando...';
+      btn.disabled = true;
+
       try {
         await window.persistStoreState(state);
+        if (window.saveJsonToSupabase) {
+          await window.saveJsonToSupabase('store.json', state);
+        }
         persistTiendaHeader(titulo, subtitulo);
         syncTiendaFromState();
-        window.alert('¡Cambios guardados en este navegador! Ahora recordá descargar el archivo con el botón azul y subirlo a GitHub para que sea permanente.');
+        renderDynamicNavMenu(); // Actualizar menú nav
+        window.alert('¡Tienda sincronizada en la nube con éxito! Los cambios ya son visibles para todos.');
+        close();
       } catch (ex) {
-        window.alert(ex?.message || String(ex));
+        window.alert('Error al sincronizar: ' + (ex?.message || String(ex)));
+      } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
       }
     });
 
@@ -1446,6 +1686,24 @@ function openTiendaStoreAdmin() {
     });
 
     overlay.querySelector('#er-tienda-add-sec')?.addEventListener('click', () => {
+      snapshotFromInputs();
+      const id = `sec-${Date.now()}`;
+      sections.push(normSec({ id, name: 'Nueva sección', order: sections.length }));
+      renderForm();
+    });
+
+    overlay.addEventListener('input', () => {
+      snapshotFromInputs();
+      const state = window.normalizeStoreState({
+        titulo,
+        subtitulo,
+        sections,
+        products,
+      });
+      window.persistStoreState?.(state);
+    });
+
+    overlay.querySelector('#er-tienda-reset-store')?.addEventListener('click', () => {
       snapshotFromInputs();
       const id = `sec-${Date.now()}`;
       sections.push(normSec({ id, name: 'Nueva sección', order: sections.length }));
@@ -1500,19 +1758,19 @@ function openTiendaStoreAdmin() {
       }
     });
 
-    overlay.querySelector('#er-tienda-close')?.addEventListener('click', () => {
+    const close = () => {
       overlay.remove();
       document.removeEventListener('keydown', onEsc);
-    });
-  }
+    };
 
-  const onEsc = e => {
-    if (e.key === 'Escape') {
-      overlay.remove();
-      document.removeEventListener('keydown', onEsc);
-    }
-  };
-  document.addEventListener('keydown', onEsc);
+    const onEsc = e => {
+      if (e.key === 'Escape') close();
+    };
+    document.addEventListener('keydown', onEsc);
+
+    overlay.querySelector('#er-tienda-close-x')?.addEventListener('click', close);
+    overlay.querySelector('#er-tienda-close')?.addEventListener('click', close);
+  }
 
   renderForm();
 }
@@ -1563,35 +1821,58 @@ function initializeEditableContent() {
 
   // Intentar cargar contenido desde un archivo estático data/pages.json si existe
   async function loadStaticPagesJson() {
+    let remotePages = {};
+
+    // 1. Intentar cargar desde Supabase (PRIORITARIO)
+    if (window.loadJsonFromSupabase) {
+      try {
+        const cloud = await window.loadJsonFromSupabase('pages.json');
+        if (cloud) {
+          window.__remotePages = cloud;
+          const cloudData = cloud[pageId];
+          if (cloudData) {
+            // Si NO estamos editando, o si el localStorage está vacío, mandamos lo de la nube
+            if (!isOwnerEditSession() || !localStorage.getItem(pageKey)) {
+              saved = cloudData;
+              localStorage.setItem(pageKey, JSON.stringify(saved));
+              applySavedContent();
+            }
+          }
+          return; 
+        }
+      } catch (e) {
+        console.error('Error cargando de Supabase:', e);
+      }
+    }
+
+    // 2. Fallback a GitHub data/pages.json (solo si no cargó de la nube)
     try {
       const r = await fetch('./data/pages.json', { cache: 'no-cache' });
       if (r.ok) {
-        const remotePages = await r.json();
-        // Solo guardamos en localStorage si no hay nada guardado ya para esa página específica
-        // para no pisar los cambios que el dueño esté haciendo localmente antes de exportar.
+        remotePages = await r.json();
         if (remotePages[pageId]) {
-          const localData = safeJsonParse(localStorage.getItem(pageKey), null);
-          if (!localData) {
-            localStorage.setItem(pageKey, JSON.stringify(remotePages[pageId]));
+          // Solo aplicamos si no hay nada en localStorage todavía (primera carga)
+          if (!localStorage.getItem(pageKey)) {
             saved = remotePages[pageId];
+            localStorage.setItem(pageKey, JSON.stringify(saved));
             applySavedContent();
           }
         }
-        // Guardamos todo el objeto para poder exportarlo después si es necesario
-        window.__remotePages = remotePages;
       }
     } catch (_) {}
+    
+    window.__remotePages = remotePages;
   }
 
   function applySavedContent() {
     editableItems.forEach((el) => {
       const key = el.getAttribute('data-edit-key');
       if (!key) return;
-      if (useTiendaStore && key === 'tienda_titulo' && typeof st.titulo === 'string') {
+      if (useTiendaStore && st && key === 'tienda_titulo' && typeof st.titulo === 'string') {
         applyTextToEditableEl(el, key, st.titulo);
         return;
       }
-      if (useTiendaStore && key === 'tienda_subtitulo') {
+      if (useTiendaStore && st && key === 'tienda_subtitulo') {
         applyTextToEditableEl(el, key, st.subtitulo ?? '');
         return;
       }
@@ -1625,21 +1906,65 @@ function initializeEditableContent() {
 
   if (!isOwnerEditSession() && !window.isStoreOwnerLoggedIn?.()) return;
 
-  // ... (resto del código del panel de edición)
+  // Habilitar edición directa en la página
+  editableItems.forEach(el => {
+    el.setAttribute('contenteditable', 'true');
+    el.classList.add('admin-editable-active');
+    
+    // Auto-guardado local al escribir para no perder nada con F5
+    el.addEventListener('input', () => {
+      const key = el.getAttribute('data-edit-key');
+      if (key) {
+        saved[key] = el.textContent || '';
+        localStorage.setItem(pageKey, JSON.stringify(saved));
+      }
+    });
+  });
 
   if (document.getElementById('store-grid')) {
     const panel = document.createElement('div');
     panel.className = 'fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:max-w-md z-50 flex flex-col gap-3';
     panel.innerHTML = `
-      <button type="button" id="er-tienda-gestionar" class="w-full py-6 px-5 text-2xl font-bold rounded-lg bg-green-700 hover:bg-green-600 text-white shadow-lg border-2 border-green-500/50">
-        Gestionar la tienda
+      <button type="button" id="er-tienda-save-direct" class="w-full py-6 px-5 text-2xl font-bold rounded-lg bg-green-700 hover:bg-green-600 text-white shadow-lg border-2 border-green-500/50 flex items-center justify-center gap-3">
+        <i class="fas fa-cloud-upload-alt"></i> GUARDAR TODO
       </button>
-      <p class="text-center text-base text-gray-400 px-1 leading-snug">Acá cambian obras, precios, fotos y textos. También el título de la página.</p>
-      <button type="button" id="er-owner-exit-tienda" class="w-full py-4 px-4 text-xl rounded-lg bg-zinc-900 border border-zinc-600 hover:border-white text-gray-200">
-        Salir
+      <button type="button" id="er-tienda-gestionar" class="w-full py-4 px-5 text-xl font-bold rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white shadow-lg border border-zinc-600">
+        Panel de Control
+      </button>
+      <button type="button" id="er-owner-exit-tienda" class="w-full py-3 px-4 text-lg rounded-lg bg-black/80 border border-zinc-700 hover:border-white text-gray-400">
+        Salir del Editor
       </button>
     `;
     document.body.appendChild(panel);
+
+    panel.querySelector('#er-tienda-save-direct')?.addEventListener('click', async () => {
+      const btn = panel.querySelector('#er-tienda-save-direct');
+      const originalHtml = btn.innerHTML;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> GUARDANDO...';
+      btn.disabled = true;
+
+      try {
+        const base = window.getStoreState?.() || {};
+        const state = {
+          ...base,
+          titulo: document.querySelector('[data-edit-key="tienda_titulo"]')?.textContent || base.titulo,
+          subtitulo: document.querySelector('[data-edit-key="tienda_subtitulo"]')?.textContent || base.subtitulo,
+        };
+        
+        await window.persistStoreState(state);
+        if (window.saveJsonToSupabase) {
+          await window.saveJsonToSupabase('store.json', state);
+        }
+        renderDynamicNavMenu(); // Refrescar menú nav
+        window.alert('¡Todo guardado en la nube con éxito! Ya es público para todos.');
+      } catch (e) {
+        window.alert('Error al guardar: ' + e.message);
+      } finally {
+        btn.innerHTML = originalHtml;
+        btn.disabled = false;
+      }
+    });
+
     panel.querySelector('#er-tienda-gestionar')?.addEventListener('click', () => openTiendaStoreAdmin());
     panel.querySelector('#er-owner-exit-tienda')?.addEventListener('click', () => {
       sessionStorage.removeItem(ER_OWNER_SESSION_KEY);
@@ -1667,28 +1992,79 @@ function initializeEditableContent() {
     editableGalleries.forEach((gal) => {
       const key = gal.getAttribute('data-edit-gallery');
       if (!key) return;
-      // Los datos de la galería se manejan un poco distinto porque vienen del modal
-      // Si ya están en el storage local, los preservamos aquí
       if (saved[key]) next[key] = saved[key];
     });
     localStorage.setItem(pageKey, JSON.stringify(next));
+    
+    // Sincronizar con Supabase automáticamente al persistir desde el DOM
+    if (typeof window.saveJsonToSupabase === 'function') {
+      const currentPageId = location.pathname.split('/').pop() || 'index.html';
+      const allPages = window.__remotePages || {};
+      allPages[currentPageId] = next;
+      
+      try {
+        await window.saveJsonToSupabase('pages.json', allPages);
+      } catch (err) {
+        console.error('Supabase auto-sync failed:', err);
+        throw new Error('No se pudo sincronizar con la nube (Supabase). Verificá tu conexión o configuración.');
+      }
+    }
   };
 
   const panel = document.createElement('div');
   panel.className = 'fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:max-w-md z-50 flex flex-col gap-3';
   panel.innerHTML = `
-    <button type="button" id="er-owner-open-editor" class="w-full py-5 px-6 text-xl font-bold rounded-sm bg-brand-red hover:bg-brand-dark-red text-white shadow-lg border border-brand-red/40">
-      Editar textos de esta página
+    <button type="button" id="er-owner-save-global" class="w-full py-6 px-6 text-2xl font-bold rounded-sm bg-green-700 hover:bg-green-600 text-white shadow-lg border-2 border-green-500/50 flex items-center justify-center gap-3">
+      <i class="fas fa-save"></i> GUARDAR CAMBIOS
     </button>
-    <button type="button" id="er-owner-exit-btn" class="w-full py-3 px-4 text-lg rounded-sm bg-zinc-900 border border-zinc-600 hover:border-white text-gray-200">
-      Salir (ocultar botones de edición)
+    <button type="button" id="er-owner-open-editor" class="w-full py-4 px-6 text-xl font-bold rounded-sm bg-brand-red hover:bg-brand-dark-red text-white shadow-lg border border-brand-red/40">
+      Panel de Fotos y Reseñas
     </button>
+    <div class="grid grid-cols-2 gap-2">
+      <button type="button" id="er-owner-hide-panel" class="py-3 px-4 text-sm rounded-sm bg-zinc-800 border border-zinc-700 hover:border-white text-gray-400">
+        Ocultar Panel
+      </button>
+      <button type="button" id="er-owner-exit-btn" class="py-3 px-4 text-sm rounded-sm bg-black/80 border border-zinc-700 hover:border-white text-gray-400">
+        Salir
+      </button>
+    </div>
   `;
   document.body.appendChild(panel);
+
+  panel.querySelector('#er-owner-hide-panel')?.addEventListener('click', () => {
+    panel.style.display = 'none';
+    // Agregar un pequeño botón flotante para volver a mostrarlo
+    const showBtn = document.createElement('button');
+    showBtn.innerHTML = '<i class="fas fa-edit"></i>';
+    showBtn.className = 'fixed bottom-4 left-4 w-12 h-12 bg-brand-red text-white rounded-full shadow-2xl z-50 flex items-center justify-center';
+    showBtn.onclick = () => {
+      panel.style.display = 'flex';
+      showBtn.remove();
+    };
+    document.body.appendChild(showBtn);
+  });
+
+  panel.querySelector('#er-owner-save-global')?.addEventListener('click', async () => {
+    const btn = panel.querySelector('#er-owner-save-global');
+    const originalHtml = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> GUARDANDO...';
+    btn.disabled = true;
+
+    try {
+      await persistFromDom();
+      window.alert('¡Cambios sincronizados en la nube correctamente!');
+    } catch (e) {
+      window.alert('Error al sincronizar: ' + e.message);
+    } finally {
+      btn.innerHTML = originalHtml;
+      btn.disabled = false;
+    }
+  });
 
   const openBtn = panel.querySelector('#er-owner-open-editor');
   const exitBtn = panel.querySelector('#er-owner-exit-btn');
 
+  openBtn?.addEventListener('click', openOwnerEditorModal);
   exitBtn?.addEventListener('click', () => {
     sessionStorage.removeItem(ER_OWNER_SESSION_KEY);
     window.location.reload();
@@ -1698,15 +2074,29 @@ function openOwnerEditorModal() {
     const overlay = document.createElement('div');
     overlay.id = 'er-owner-editor-overlay';
     overlay.className = 'fixed inset-0 z-[200] bg-black/92 overflow-y-auto p-4 flex items-start justify-center';
+    
+    const close = () => {
+      document.removeEventListener('keydown', onEsc);
+      overlay.remove();
+    };
+    const onEsc = (e) => {
+      if (e.key === 'Escape') close();
+    };
+    document.addEventListener('keydown', onEsc);
+
     overlay.innerHTML = `
-      <div class="w-full max-w-2xl my-6 bg-zinc-900 border-2 border-zinc-600 rounded-lg p-6 md:p-8 shadow-2xl">
+      <div class="w-full max-w-2xl my-6 bg-zinc-900 border-2 border-zinc-600 rounded-lg p-6 md:p-8 shadow-2xl relative animate-modal-in">
+        <button type="button" id="er-owner-close-x" class="er-modal-close-x">&times;</button>
         <div class="bg-blue-900/20 border border-blue-700/50 p-4 rounded-lg mb-6">
           <p class="text-blue-200 text-sm leading-relaxed italic">
-            <strong>Cómo publicar cambios en todo el sitio:</strong><br>
-            1. Editá los textos abajo y tocá <strong>Guardar cambios</strong>.<br>
-            2. Tocá el botón azul <strong>Descargar textos para GitHub</strong>.<br>
-            3. Subí el archivo (pages.json) a la carpeta <strong>data/</strong> de tu GitHub.
+            <strong>Instrucciones:</strong><br>
+            1. Editá los textos y fotos de esta página.<br>
+            2. Tocá <strong>Sincronizar en la Nube</strong> para publicar los cambios.<br>
           </p>
+          <div class="mt-3 flex flex-wrap gap-2 items-center">
+            <button type="button" id="er-setup-supabase" class="text-[10px] bg-blue-700 hover:bg-blue-600 text-white px-2 py-1 rounded">Configurar Supabase</button>
+            <span id="er-supabase-status" class="text-[9px] text-blue-300"></span>
+          </div>
         </div>
         <div class="flex border-b border-zinc-800 mb-6">
           <button id="er-tab-content" class="px-6 py-3 text-lg font-bold border-b-2 border-brand-red text-white">Contenido</button>
@@ -1717,8 +2107,8 @@ function openOwnerEditorModal() {
           <h2 class="text-2xl md:text-3xl font-serif font-bold text-white mb-2">Cambiar textos</h2>
           <div id="er-owner-fields" class="space-y-6 mb-8"></div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
-            <button type="button" id="er-owner-save" class="w-full py-5 text-xl font-bold rounded-sm bg-green-700 hover:bg-green-600 text-white">1. Guardar cambios</button>
-            <button type="button" id="er-owner-export" class="w-full py-5 text-xl font-bold rounded-sm bg-blue-700 hover:bg-blue-600 text-white">2. Descargar para GitHub</button>
+            <button type="button" id="er-owner-save" class="w-full py-5 text-xl font-bold rounded-sm bg-green-700 hover:bg-green-600 text-white">Sincronizar en la Nube</button>
+            <button type="button" id="er-owner-export" class="w-full py-5 text-xl font-bold rounded-sm bg-blue-700 hover:bg-blue-600 text-white">Descargar Respaldo</button>
           </div>
         </div>
 
@@ -1760,6 +2150,30 @@ function openOwnerEditorModal() {
       tabContent.classList.remove('border-b-2', 'border-brand-red', 'text-white');
       tabContent.classList.add('text-gray-500');
       renderAdminReviews();
+    });
+
+    const updateSupabaseStatus = (btnId, statusId) => {
+      const sUrl = localStorage.getItem('er_supabase_url');
+      const sStatus = overlay.querySelector(`#${statusId}`);
+      if (sUrl && sStatus) {
+        sStatus.innerHTML = `<i class="fas fa-check-circle text-green-400 mr-1"></i> Conectado: ${new URL(sUrl).hostname}`;
+      } else if (sStatus) {
+        sStatus.innerHTML = '<i class="fas fa-exclamation-circle text-amber-400 mr-1"></i> No configurado';
+      }
+    };
+
+    updateSupabaseStatus('er-setup-supabase', 'er-supabase-status');
+
+    overlay.querySelector('#er-setup-supabase')?.addEventListener('click', () => {
+      const url = window.prompt('URL de Supabase (ej: https://xyz.supabase.co):', localStorage.getItem('er_supabase_url') || '');
+      const key = window.prompt('Anon Key de Supabase:', localStorage.getItem('er_supabase_key') || '');
+      const bucket = window.prompt('Nombre del Bucket (ej: images):', localStorage.getItem('er_supabase_bucket') || 'images');
+      if (url && key) {
+        localStorage.setItem('er_supabase_url', url);
+        localStorage.setItem('er_supabase_key', key);
+        localStorage.setItem('er_supabase_bucket', bucket || 'images');
+        updateSupabaseStatus('er-setup-supabase', 'er-supabase-status');
+      }
     });
 
     function renderAdminReviews() {
@@ -1817,6 +2231,15 @@ function openOwnerEditorModal() {
       ta.rows = key.includes('parrafo') || key.includes('subtitulo') ? 5 : 2;
       ta.className = 'w-full text-lg md:text-xl p-4 bg-black border-2 border-zinc-600 rounded-sm text-white placeholder-gray-600 min-h-[3rem]';
       ta.value = val;
+      
+      ta.addEventListener('input', () => {
+        saved[key] = ta.value;
+        localStorage.setItem(pageKey, JSON.stringify(saved));
+        // Actualizar el elemento en la página también en tiempo real
+        const el = document.querySelector(`[data-edit-key="${key}"]`);
+        if (el) el.textContent = ta.value;
+      });
+
       wrap.appendChild(lab);
       wrap.appendChild(ta);
       fieldsRoot?.appendChild(wrap);
@@ -1832,14 +2255,48 @@ function openOwnerEditorModal() {
       lab.className = 'block text-lg font-semibold text-gray-100';
       lab.setAttribute('for', `er-field-${key}`);
       lab.textContent = label;
+      const wrapInp = document.createElement('div');
+      wrapInp.className = 'flex gap-2';
       const inp = document.createElement('input');
       inp.type = 'text';
       inp.id = `er-field-${key}`;
       inp.dataset.editImage = key;
-      inp.className = 'w-full text-lg md:text-xl p-4 bg-black border-2 border-zinc-600 rounded-sm text-white';
+      inp.className = 'flex-1 text-lg md:text-xl p-4 bg-black border-2 border-zinc-600 rounded-sm text-white';
       inp.value = img.getAttribute('src') || '';
+      
+      const updateImg = (val) => {
+        saved[key] = val;
+        localStorage.setItem(pageKey, JSON.stringify(saved));
+        img.src = val;
+      };
+
+      inp.addEventListener('input', () => updateImg(inp.value));
+
+      const uBtn = document.createElement('button');
+      uBtn.type = 'button';
+      uBtn.className = 'bg-zinc-700 hover:bg-zinc-600 text-white px-4 rounded-sm text-sm shrink-0';
+      uBtn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i>';
+      uBtn.onclick = async () => {
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = 'image/*';
+        fileInput.onchange = async () => {
+          const file = fileInput.files?.[0];
+          if (!file) return;
+          uBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+          try {
+            const publicUrl = await uploadToSupabase(file);
+            inp.value = publicUrl;
+            updateImg(publicUrl);
+          } catch (e) { alert(e.message); }
+          finally { uBtn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i>'; }
+        };
+        fileInput.click();
+      };
+      wrapInp.appendChild(inp);
+      wrapInp.appendChild(uBtn);
       wrap.appendChild(lab);
-      wrap.appendChild(inp);
+      wrap.appendChild(wrapInp);
       fieldsRoot?.appendChild(wrap);
     });
 
@@ -1858,6 +2315,7 @@ function openOwnerEditorModal() {
             <div class="flex gap-2 items-center er-gal-item" data-idx="${i}">
               <img src="${escapeAttr(src)}" class="w-12 h-12 object-cover rounded border border-zinc-700">
               <input type="text" class="flex-1 p-3 bg-black border-2 border-zinc-600 rounded text-white text-sm" value="${escapeAttr(src)}">
+              <button type="button" class="er-btn-upload-gal bg-zinc-700 hover:bg-zinc-600 text-white px-3 py-2 rounded text-xs shrink-0"><i class="fas fa-cloud-upload-alt"></i></button>
               <button type="button" class="er-gal-remove text-red-500 p-2"><i class="fas fa-trash"></i></button>
             </div>
           `).join('')}
@@ -1869,12 +2327,48 @@ function openOwnerEditorModal() {
       const listContainer = wrap.querySelector(`#er-gal-list-${key}`);
       const addBtn = wrap.querySelector(`#er-gal-add-${key}`);
 
-      const updateListEvents = () => {
+      let updateListEvents = () => {
         listContainer.querySelectorAll('.er-gal-remove').forEach(btn => {
           btn.onclick = () => {
             btn.closest('.er-gal-item').remove();
           };
         });
+      };
+
+      const updateUploadEvents = () => {
+        listContainer.querySelectorAll('.er-btn-upload-gal').forEach(uBtn => {
+          if (uBtn.dataset.bound) return;
+          uBtn.dataset.bound = '1';
+          uBtn.onclick = async () => {
+            const input = uBtn.parentElement?.querySelector('input');
+            if (!input) return;
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = 'image/*';
+            fileInput.onchange = async () => {
+              const file = fileInput.files?.[0];
+              if (!file) return;
+              uBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+              try {
+                const publicUrl = await uploadToSupabase(file);
+                input.value = publicUrl;
+                const imgPreview = uBtn.parentElement?.querySelector('img') || uBtn.parentElement?.querySelector('.w-12');
+                if (imgPreview) {
+                  if (imgPreview.tagName === 'IMG') imgPreview.src = publicUrl;
+                  else imgPreview.innerHTML = `<img src="${publicUrl}" class="w-full h-full object-cover rounded">`;
+                }
+              } catch (e) { alert(e.message); }
+              finally { uBtn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i>'; }
+            };
+            fileInput.click();
+          };
+        });
+      };
+      
+      const baseUpdateEvents = updateListEvents;
+      updateListEvents = () => {
+        baseUpdateEvents();
+        updateUploadEvents();
       };
 
       updateListEvents();
@@ -1885,6 +2379,7 @@ function openOwnerEditorModal() {
         div.innerHTML = `
           <div class="w-12 h-12 bg-zinc-800 rounded border border-zinc-700 flex items-center justify-center text-gray-500"><i class="fas fa-image"></i></div>
           <input type="text" placeholder="img/fotoX.jpeg" class="flex-1 p-3 bg-black border-2 border-zinc-600 rounded text-white text-sm" value="">
+          <button type="button" class="er-btn-upload-gal bg-zinc-700 hover:bg-zinc-600 text-white px-3 py-2 rounded text-xs shrink-0"><i class="fas fa-cloud-upload-alt"></i></button>
           <button type="button" class="er-gal-remove text-red-500 p-2"><i class="fas fa-trash"></i></button>
         `;
         listContainer.appendChild(div);
@@ -1892,19 +2387,11 @@ function openOwnerEditorModal() {
       };
     });
 
-    const onEsc = (e) => {
-      if (e.key === 'Escape') close();
-    };
-    const close = () => {
-      document.removeEventListener('keydown', onEsc);
-      overlay.remove();
-    };
-    document.addEventListener('keydown', onEsc);
-
     overlay.addEventListener('click', (e) => {
       if (e.target === overlay) close();
     });
 
+    overlay.querySelector('#er-owner-close-x')?.addEventListener('click', close);
     overlay.querySelector('#er-owner-close')?.addEventListener('click', close);
 
     overlay.querySelector('#er-owner-export')?.addEventListener('click', () => {
@@ -1933,6 +2420,7 @@ function openOwnerEditorModal() {
     });
 
     overlay.querySelector('#er-owner-save')?.addEventListener('click', async () => {
+      // Aplicar cambios desde los inputs al DOM antes de persistir
       overlay.querySelectorAll('textarea[data-edit-key]').forEach((ta) => {
         const key = ta.dataset.editKey;
         const el = editableItems.find(x => x.getAttribute('data-edit-key') === key);
@@ -1964,10 +2452,10 @@ function openOwnerEditorModal() {
       try {
         await persistFromDom();
         close();
-        window.alert('¡Cambios guardados localmente! Para que sean permanentes para todos, recordá usar el botón de exportar JSON si estás en la tienda, o el sistema de sincronización manual.');
+        window.alert('¡Contenido sincronizado en la nube! Los cambios ya son visibles para todos.');
       } catch (err) {
         console.error('Error al guardar:', err);
-        window.alert('Hubo un error al intentar guardar los cambios localmente.');
+        window.alert('Error: ' + err.message);
       }
     });
   }
@@ -1979,6 +2467,17 @@ function initializeNavigation() {
   const menuBtn = document.getElementById('menu-btn');
   const mobileMenu = document.getElementById('mobile-menu');
 
+  const closeMobileMenu = () => {
+    if (mobileMenu && !mobileMenu.classList.contains('hidden')) {
+      mobileMenu.classList.add('hidden');
+      const icon = menuBtn?.querySelector('i');
+      if (icon) {
+        icon.classList.add('fa-bars');
+        icon.classList.remove('fa-xmark');
+      }
+    }
+  };
+
   menuBtn?.addEventListener('click', () => {
     if (!mobileMenu) return;
     mobileMenu.classList.toggle('hidden');
@@ -1989,41 +2488,69 @@ function initializeNavigation() {
     }
   });
 
-  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-    anchor.addEventListener('click', function (e) {
-      e.preventDefault();
-      const target = document.querySelector(this.getAttribute('href'));
-      if (target) target.scrollIntoView({ behavior: 'smooth' });
-      if (mobileMenu && !mobileMenu.classList.contains('hidden')) {
-        mobileMenu.classList.add('hidden');
-        const icon = menuBtn?.querySelector('i');
-        if (icon) {
-          icon.classList.add('fa-bars');
-          icon.classList.remove('fa-xmark');
+  document.addEventListener('click', (e) => {
+    const anchor = e.target.closest('a');
+    if (!anchor) return;
+
+    const href = anchor.getAttribute('href') || '';
+    
+    if (href.includes('#')) {
+      const parts = href.split('#');
+      const pathPart = parts[0];
+      const anchorPart = parts[1];
+      
+      const currentPath = window.location.pathname;
+      const isSamePage = !pathPart || 
+                         currentPath.endsWith(pathPart.replace('./', '')) ||
+                         (currentPath === '/' && (pathPart === 'index.html' || pathPart === './index.html'));
+
+      if (isSamePage && anchorPart) {
+        const target = document.getElementById(anchorPart);
+        if (target) {
+          e.preventDefault();
+          target.scrollIntoView({ behavior: 'smooth' });
+          closeMobileMenu();
+          return;
         }
+      } else if (isSamePage && !anchorPart && href === '#') {
+        e.preventDefault();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        closeMobileMenu();
+        return;
       }
-    });
+    }
+    
+    if (mobileMenu && mobileMenu.contains(anchor)) {
+      setTimeout(closeMobileMenu, 150);
+    }
   });
 }
 
 function initializeScrollAnimations() {
-  const candidates = Array.from(
-    document.querySelectorAll('section, main .bg-black, main .bg-brand-black, main .bg-zinc-900')
-  ).filter(el => !el.classList.contains('reveal'));
-
-  if (candidates.length === 0) return;
-
-  candidates.forEach(el => el.classList.add('scroll-animate'));
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('is-scrolled');
-        observer.unobserve(entry.target);
-      }
+  const nav = document.querySelector('nav');
+  window.addEventListener('scroll', () => {
+    if (nav) {
+      nav.classList.toggle('nav-scrolled', window.scrollY > 50);
+    }
+    
+    // Cerrar dropdowns al hacer scroll para una experiencia más limpia
+    document.querySelectorAll('.nav-dropdown').forEach(d => {
+      d.style.opacity = '0';
+      d.style.visibility = 'hidden';
+      setTimeout(() => {
+        d.style.opacity = '';
+        d.style.visibility = '';
+      }, 500);
     });
-  }, { threshold: 0.16, rootMargin: '0px 0px -8% 0px' });
+  });
 
-  candidates.forEach((el) => observer.observe(el));
+  // Convertimos las secciones automáticas al sistema de reveal premium, excluyendo menús
+  const containers = document.querySelectorAll('section, main > div, footer');
+  containers.forEach(el => {
+    if (!el.classList.contains('reveal') && !el.closest('nav')) {
+      el.classList.add('reveal');
+    }
+  });
 }
 
 function initializeReveal() {
@@ -2034,22 +2561,17 @@ function initializeReveal() {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
         entry.target.classList.add('is-visible');
-        // Opcional: unobserve si solo quieres que pase una vez
-        // revealObserver.unobserve(entry.target);
-      } else {
-        // Opcional: quitar clase para que se repita la animación al scrollear
-        // entry.target.classList.remove('is-visible');
       }
     });
   }, { 
-    threshold: 0.15,
+    threshold: 0.1,
     rootMargin: '0px 0px -50px 0px'
   });
 
   revealElements.forEach((el, index) => {
-    // Escalonar la aparición inicial si están cerca
-    if (el.getBoundingClientRect().top < window.innerHeight) {
-      el.style.transitionDelay = `${index * 100}ms`;
+    // Si el padre tiene la clase stagger-container, inyectamos el índice para el CSS
+    if (el.parentElement && el.parentElement.classList.contains('stagger-container')) {
+      el.style.setProperty('--stagger-idx', index % 10);
     }
     revealObserver.observe(el);
   });
